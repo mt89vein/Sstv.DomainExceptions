@@ -1,0 +1,12 @@
+# my global config
+global:
+  scrape_interval:     15s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+  # scrape_timeout is set to the global default (10s).
+
+scrape_configs:
+  - job_name: 'sstv.host'
+    scrape_interval: 5s
+    scheme: 'http'
+    static_configs:
+         - targets: ['host.docker.internal:5115']

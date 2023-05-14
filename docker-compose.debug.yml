@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+
+  grafana:
+    image: grafana/grafana:8.2.6
+    volumes:
+    - ./dev/grafana/provisioning:/etc/grafana/provisioning
+    - ./dev/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - 3000:3000
+
+  prometheus:
+      image: prom/prometheus:v2.17.1
+      volumes:
+        - ./dev/prometheus/:/etc/prometheus/
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+      ports:
+        - 9090:9090
