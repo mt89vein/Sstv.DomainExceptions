@@ -22,11 +22,11 @@ Technical support can look his own wiki, find article by error code, read the so
 
 This repository contains three NuGet packages:
 
-| Package                                               | Version | Description                                                                | Readme links                                                               |
-|-------------------------------------------------------|---------|----------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| Sstv.DomainExceptions                                 | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainException)   | Core lib with no dependencies, that can be referenced in your domain layer | [readme](./Sstv.DomainExceptions/README.md)                                |
-| Sstv.DomainExceptions.Extensions.DependencyInjection  | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.Extensions.DependencyInjection.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainExceptions.Extensions.DependencyInjection)   | Dependency injection integration lib, for configuring at composition root  | [readme](./Sstv.DomainExceptions.Extensions.DependencyInjection/README.md) |
-| Sstv.DomainExceptions.Extensions.SerilogEnricher      | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.Extensions.SerilogEnricher.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainExceptions.Extensions.SerilogEnricher)   | Serilog integration lib                                                    | [readme](./Sstv.DomainExceptions.Extensions.SerilogEnricher/README.md)     |
+| Package                                               | Version | Description                                                                |
+|-------------------------------------------------------|---------|----------------------------------------------------------------------------|
+| [Sstv.DomainExceptions](./Sstv.DomainExceptions/README.md)                                 | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainException)   | Core lib with no dependencies, that can be referenced in your domain layer |
+| [Sstv.DomainExceptions.Extensions.DependencyInjection](./Sstv.DomainExceptions.Extensions.DependencyInjection/README.md)  | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.Extensions.DependencyInjection.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainExceptions.Extensions.DependencyInjection)   | Dependency injection integration lib, for configuring at composition root  |
+| [Sstv.DomainExceptions.Extensions.SerilogEnricher](./Sstv.DomainExceptions.Extensions.SerilogEnricher/README.md)      | [![NuGet version](https://img.shields.io/nuget/v/Sstv.DomainExceptions.Extensions.SerilogEnricher.svg?style=flat-square)](https://www.nuget.org/packages/Sstv.DomainExceptions.Extensions.SerilogEnricher)   | Serilog integration lib                                                    |
 
 How to install and use, you can read at theirs readme files.
 
