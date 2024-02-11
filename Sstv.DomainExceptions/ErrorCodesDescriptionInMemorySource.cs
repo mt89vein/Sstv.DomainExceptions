@@ -1,4 +1,4 @@
-﻿namespace Sstv.DomainExceptions.Extensions.DependencyInjection;
+﻿namespace Sstv.DomainExceptions;
 
 /// <summary>
 /// Dictionary as an error codes description source.
@@ -8,7 +8,7 @@ public sealed class ErrorCodesDescriptionInMemorySource : IErrorCodesDescription
     /// <summary>
     /// User provided dictionary.
     /// </summary>
-    private readonly IDictionary<string, ErrorDescription> _errorDescriptions;
+    private readonly IReadOnlyDictionary<string, ErrorDescription> _errorDescriptions;
 
     /// <summary>
     /// Initiates new instance of <see cref="ErrorCodesDescriptionInMemorySource"/>.
@@ -18,12 +18,11 @@ public sealed class ErrorCodesDescriptionInMemorySource : IErrorCodesDescription
     /// When <paramref name="errorDescriptions"/> was null.
     /// </exception>
     public ErrorCodesDescriptionInMemorySource(
-        IDictionary<string, ErrorDescription> errorDescriptions
+        IReadOnlyDictionary<string, ErrorDescription> errorDescriptions
     )
     {
-        ArgumentNullException.ThrowIfNull(errorDescriptions);
-
-        _errorDescriptions = errorDescriptions;
+        _errorDescriptions = errorDescriptions ??
+                             throw new ArgumentNullException(nameof(errorDescriptions), "errorDescriptions cannot be null");
     }
 
     /// <summary>

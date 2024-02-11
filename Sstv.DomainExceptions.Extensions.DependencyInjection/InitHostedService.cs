@@ -15,10 +15,29 @@ internal sealed class InitHostedService : BackgroundService
     /// <param name="configure">User provided configure action.</param>
     public InitHostedService(IServiceProvider sp, Action<IServiceProvider, DomainExceptionSettings>? configure)
     {
-        configure?.Invoke(sp, DomainExceptionSettings.Instance);
+        var instance = DomainExceptionSettings.Instance;
+        configure?.Invoke(sp, instance);
+
+        if (instance.CollectErrorCodesMetricAutomatically)
+        {
+            instance.OnExceptionCreated = ErrorCodesMeter.Measure;
+        }
 
         DomainExceptionSettings.ErrorDescriptionSourceGetter =
-            new Lazy<IErrorCodesDescriptionSource?>(() => sp.GetService<IErrorCodesDescriptionSource>());
+            new Lazy<IErrorCodesDescriptionSource?>(() =>
+            {
+                var dict = new Dictionary<string, ErrorDescription>();
+
+                foreach (var s in sp.GetServices<IErrorCodesDescriptionSource>())
+                {
+                    foreach (var errorDescription in s.Enumerate())
+                    {
+                        dict.TryAdd(errorDescription.ErrorCode, errorDescription);
+                    }
+                }
+
+                return new ErrorCodesDescriptionInMemorySource(dict);
+            });
     }
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

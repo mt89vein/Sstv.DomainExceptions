@@ -1,6 +1,6 @@
 ﻿namespace Sstv.Host;
 
-public static class Endpoints
+public static class MinimalEndpoints
 {
     public static IEndpointRouteBuilder MapExampleEndpoints(this IEndpointRouteBuilder app)
     {
@@ -16,9 +16,8 @@ public static class Endpoints
         app.MapGet("/minimal-api-example-2", () =>
         {
             // using enums
-            var x = new MyGenericException(DomainErrorCodesEnum.NotEnoughMoney)
+            throw ErrorCodes.NotEnoughMoney.AsException()
                 .WithDetailedMessage("You want 500, but your account balance is 300.");
-            throw x;
         });
 
         app.MapGet("/minimal-api-example-3", () =>

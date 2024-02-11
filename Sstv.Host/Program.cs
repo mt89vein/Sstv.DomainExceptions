@@ -13,7 +13,6 @@ using Sstv.Host;
 using System.Collections;
 using System.Text.Json.Serialization;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenTelemetry()
@@ -28,20 +27,19 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddDomainExceptions(b =>
 {
+    b.WithErrorCodesDescriptionSource(ErrorCodesException.ErrorCodesDescriptionSource);
+    b.WithErrorCodesDescriptionSource(SecondErrorCodesException.ErrorCodesDescriptionSource);
+    b.WithErrorCodesDescriptionFromConfiguration();
+
     b.ConfigureSettings = (sp, settings) =>
     {
         settings.GenerateExceptionIdAutomatically = true;     // default value
         settings.CollectErrorCodesMetricAutomatically = true; // default value
         settings.ThrowIfHasNoErrorCodeDescription = true;     // default value
-        settings.ErrorCodesDescriptionSource = null;          // manually set your own error description source
+        settings.ErrorCodesDescriptionSource = null;          // manually set your own error description source instance
         settings.DefaultErrorDescriptionProvider =            // override default error description func
             errorCode => new ErrorDescription(errorCode, "N/A"); // default func
     };
-});
-
-builder.Services.AddDomainExceptions(b =>
-{
-    b.WithErrorCodesDescriptionFromConfiguration();
 });
 
 // Configure problem details

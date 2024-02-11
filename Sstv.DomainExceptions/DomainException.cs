@@ -59,28 +59,27 @@ public abstract class DomainException : Exception
         Exception? innerException = null
     ) : base(message: null, innerException)
     {
-        ArgumentNullException.ThrowIfNull(errorDescription);
-
-        _errorDescription = errorDescription;
+        _errorDescription = errorDescription ??
+                            throw new ArgumentNullException(nameof(errorDescription), "errorDescription cannot be null");
 
         if (errorDescription.AdditionalData is not null)
         {
-            foreach (var (key, value) in errorDescription.AdditionalData)
+            foreach (var kv in errorDescription.AdditionalData)
             {
-                _additionalData.TryAdd(key, value);
+                if (!_additionalData.ContainsKey(kv.Key))
+                {
+                    _additionalData.Add(kv.Key, kv.Value);
+                }
             }
         }
 
         var instance = DomainExceptionSettings.Instance;
         if (instance.GenerateExceptionIdAutomatically)
         {
-            WithExceptionId();
+            WithErrorId();
         }
 
-        if (instance.CollectErrorCodesMetricAutomatically)
-        {
-            ErrorCodesMeter.Measure(this);
-        }
+        instance.OnExceptionCreated?.Invoke(this);
     }
 
     /// <summary>
@@ -116,11 +115,14 @@ public abstract class DomainException : Exception
     /// <param name="additionalData">Additional data.</param>
     public DomainException WithAdditionalData(Dictionary<string, object> additionalData)
     {
-        ArgumentNullException.ThrowIfNull(additionalData);
+        _ = additionalData ?? throw new ArgumentNullException(nameof(additionalData), "additionalData cannot be null");
 
-        foreach (var (key, value) in additionalData)
+        foreach (var kv in additionalData)
         {
-            _additionalData.TryAdd(key, value);
+            if (!_additionalData.ContainsKey(kv.Key))
+            {
+                _additionalData.Add(kv.Key, kv.Value);
+            }
         }
 
         return this;
@@ -133,10 +135,13 @@ public abstract class DomainException : Exception
     /// <param name="value">Value of data.</param>
     public DomainException WithAdditionalData(string key, object value)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(value);
+        _ = key ?? throw new ArgumentNullException(nameof(key), "key cannot be null");
+        _ = value ?? throw new ArgumentNullException(nameof(value), "value cannot be null");
 
-        _additionalData.TryAdd(key, value);
+        if (!_additionalData.ContainsKey(key))
+        {
+            _additionalData.Add(key, value);
+        }
 
         return this;
     }
@@ -147,10 +152,13 @@ public abstract class DomainException : Exception
     /// <param name="additionalData">Key value pair.</param>
     public DomainException WithAdditionalData(KeyValuePair<string, object> additionalData)
     {
-        ArgumentNullException.ThrowIfNull(additionalData.Key);
-        ArgumentNullException.ThrowIfNull(additionalData.Value);
+        _ = additionalData.Key ?? throw new ArgumentNullException(nameof(additionalData), "key cannot be null");
+        _ = additionalData.Value ?? throw new ArgumentNullException(nameof(additionalData), "value cannot be null");
 
-        _additionalData.TryAdd(additionalData.Key, additionalData.Value);
+        if (!_additionalData.ContainsKey(additionalData.Key))
+        {
+            _additionalData.Add(additionalData.Key, additionalData.Value);
+        }
 
         return this;
     }
@@ -158,10 +166,15 @@ public abstract class DomainException : Exception
     /// <summary>
     /// Marks exception with unique id.
     /// </summary>
-    /// <param name="id">Unique id. If not provided, Guid.NewGuid() would be used.</param>
-    public DomainException WithExceptionId(string? id = null)
+    /// <param name="errorId">Unique id. If not provided, Guid.NewGuid() would be used.</param>
+    public DomainException WithErrorId(string? errorId = null)
     {
-        _additionalData.TryAdd("id", id ?? Guid.NewGuid().ToString());
+        const string KEY = "ErrorId";
+
+        if (!_additionalData.ContainsKey(KEY))
+        {
+            _additionalData.Add(KEY, errorId ?? Guid.NewGuid().ToString());
+        }
 
         return this;
     }
@@ -183,7 +196,7 @@ public abstract class DomainException : Exception
             ? string.Empty
             : $", {DetailedMessage}";
 
-        return ToUserViewString() + details + Environment.NewLine + base.ToString();
+        return ToUserViewString() + details + "\r\n" + base.ToString();
     }
 
     /// <summary>
@@ -196,7 +209,10 @@ public abstract class DomainException : Exception
     /// </exception>
     private static ErrorDescription GetErrorDescription(string errorCode)
     {
-        ArgumentNullException.ThrowIfNull(errorCode);
+        if (string.IsNullOrWhiteSpace(errorCode))
+        {
+            throw new ArgumentNullException(nameof(errorCode), "errorcode cannot be null or empty");
+        }
 
         var instance = DomainExceptionSettings.Instance;
 
@@ -216,18 +232,5 @@ public abstract class DomainException : Exception
 
         return instance.DefaultErrorDescriptionProvider?.Invoke(errorCode) ??
                new ErrorDescription(errorCode, "N/A");
-    }
-}
-
-/// <summary>
-/// Generic domain exception with ErrorCode as an enum value.
-/// </summary>
-[SuppressMessage("Design", "CA1032:Implement standard exception constructors")]
-public abstract class DomainException<TErrorCode> : DomainException
-    where TErrorCode : unmanaged, Enum
-{
-    protected DomainException(TErrorCode errorCode, Exception? innerException = null)
-        : base(errorCode.GetErrorDescription(), innerException)
-    {
     }
 }

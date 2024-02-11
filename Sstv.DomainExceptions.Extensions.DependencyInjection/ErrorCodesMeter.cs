@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace Sstv.DomainExceptions;
+namespace Sstv.DomainExceptions.Extensions.DependencyInjection;
 
 /// <summary>
 /// Errors metric collector.
@@ -24,9 +24,9 @@ public static class ErrorCodesMeter
     private static readonly Counter<long> _counter = _meter.CreateCounter<long>(name: "error.codes", description: "Error codes count");
 
     /// <summary>
-    /// Counts exception.
+    /// Counts error codes.
     /// </summary>
-    /// <param name="domainException">An exception.</param>
+    /// <param name="domainException">Exception.</param>
     public static void Measure(DomainException? domainException)
     {
         if (!_counter.Enabled)
@@ -43,6 +43,31 @@ public static class ErrorCodesMeter
         {
             { "code", domainException.ErrorCode },
             { "message", domainException.Message }
+        };
+
+        _counter.Add(1, tagList);
+    }
+
+    /// <summary>
+    /// Counts error codes.
+    /// </summary>
+    /// <param name="errorDescription">An error description.</param>
+    public static void Measure(ErrorDescription? errorDescription)
+    {
+        if (!_counter.Enabled)
+        {
+            return;
+        }
+
+        if (errorDescription is null)
+        {
+            return;
+        }
+
+        var tagList = new TagList
+        {
+            { "code", errorDescription.ErrorCode },
+            { "message", errorDescription.Description }
         };
 
         _counter.Add(1, tagList);

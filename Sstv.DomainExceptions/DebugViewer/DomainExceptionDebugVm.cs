@@ -5,7 +5,7 @@ namespace Sstv.DomainExceptions.DebugViewer;
 /// <summary>
 /// All configured domain exception details.
 /// </summary>
-[DebuggerDisplay("Count = {ErrorCodes.Length}")]
+[DebuggerDisplay("Count = {ErrorCodes.Count}")]
 public class DomainExceptionDebugVm
 {
     /// <summary>

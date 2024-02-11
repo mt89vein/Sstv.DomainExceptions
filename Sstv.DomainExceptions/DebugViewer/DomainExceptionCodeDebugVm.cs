@@ -11,21 +11,6 @@ namespace Sstv.DomainExceptions.DebugViewer;
 public class DomainExceptionCodeDebugVm
 {
     /// <summary>
-    /// Exception type info.
-    /// </summary>
-    public string ExceptionType { get; set; } = null!;
-
-    /// <summary>
-    /// Assembly, where the source code of exception.
-    /// </summary>
-    public string AssemblyName { get; set; } = null!;
-
-    /// <summary>
-    /// Domain exception enum type (if any).
-    /// </summary>
-    public string? ErrorCodesEnumType { get; set; }
-
-    /// <summary>
     /// Full error code with prefix.
     /// </summary>
     public string Code { get; set; } = null!;

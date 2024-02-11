@@ -12,19 +12,19 @@ This library brings to Sstv.DomainExceptions additional capabilities to register
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 1.0.0
+Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 2.0.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 1.0.0
+dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 2.0.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="1.0.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="2.0.0" />
 ```
 
 ## How to use?
@@ -78,6 +78,9 @@ services.AddDomainException(bulder =>
     bulder.WithErrorCodesDescriptionFromConfiguration();
 });
 ```
+
+All this sources internally merged and can be used by any DomainException class
+
 
 Below example of appsettings.json, if you choose `WithErrorCodesDescriptionFromConfiguration` with default configuration section
 `DomainExceptionSettings:ErrorCodes`:
@@ -181,17 +184,11 @@ output example:
 {
   "errorCodes": [
     {
-      "exceptionType": "Sstv.Host.MyGenericException",
-      "assemblyName": "Sstv.Host, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "errorCodesEnumType": "Sstv.Host.DomainErrorCodesEnum",
       "code": "SSTV.10001",
       "helpLink": "https://help.myproject.ru/error-codes/not-enough-money",
       "message": "You have not enough money"
     },
     {
-      "exceptionType": "Sstv.Host.MyGenericException",
-      "assemblyName": "Sstv.Host, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "errorCodesEnumType": "Sstv.Host.DomainErrorCodesEnum",
       "code": "DIF.10003",
       "helpLink": "https://help.myproject.ru/error-codes/DIF.10003",
       "message": "Obsolete error code in enum",

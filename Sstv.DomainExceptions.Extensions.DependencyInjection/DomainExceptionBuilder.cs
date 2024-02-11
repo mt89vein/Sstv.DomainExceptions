@@ -2,14 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sstv.DomainExceptions.DebugViewer;
-using System.Diagnostics;
 
 namespace Sstv.DomainExceptions.Extensions.DependencyInjection;
 
 /// <summary>
 /// Builder of domain exception.
 /// </summary>
-[DebuggerDisplay("ErrorCodesDescriptionSource = {ErrorCodesSourceAddedType.Name}")]
 public class DomainExceptionBuilder
 {
     /// <summary>
@@ -23,9 +21,9 @@ public class DomainExceptionBuilder
     public Action<IServiceProvider, DomainExceptionSettings>? ConfigureSettings { get; set; }
 
     /// <summary>
-    /// Error codes source type that should be used.
+    /// Is manually added error codes source?
     /// </summary>
-    internal Type? ErrorCodesSourceAddedType { get; set; }
+    internal bool ErrorCodesSourceManuallyAdded { get; set; }
 
     /// <summary>
     /// Initiates new instance <see cref="DomainExceptionBuilder"/>.
@@ -45,10 +43,21 @@ public class DomainExceptionBuilder
     public DomainExceptionBuilder WithErrorCodesDescriptionSource<TErrorCodesDescriptionSource>()
         where TErrorCodesDescriptionSource : class, IErrorCodesDescriptionSource
     {
-        EnsureErrorCodesDescriptionSourceNotAddedYet();
-        Services.RemoveAll(typeof(IErrorCodesDescriptionSource));
         Services.AddSingleton<IErrorCodesDescriptionSource, TErrorCodesDescriptionSource>();
-        ErrorCodesSourceAddedType = typeof(TErrorCodesDescriptionSource);
+        ErrorCodesSourceManuallyAdded = true;
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds custom error code description source.
+    /// </summary>
+    /// <typeparam name="TErrorCodesDescriptionSource">Custom error codes description source.</typeparam>
+    public DomainExceptionBuilder WithErrorCodesDescriptionSource<TErrorCodesDescriptionSource>(TErrorCodesDescriptionSource instance)
+        where TErrorCodesDescriptionSource : class, IErrorCodesDescriptionSource
+    {
+        Services.AddSingleton<IErrorCodesDescriptionSource>(instance);
+        ErrorCodesSourceManuallyAdded = true;
 
         return this;
     }
@@ -63,12 +72,10 @@ public class DomainExceptionBuilder
     {
         ArgumentNullException.ThrowIfNull(sectionName);
 
-        EnsureErrorCodesDescriptionSourceNotAddedYet();
-
-        ErrorCodesDescriptionFromConfigurationSource.SectionName = sectionName;
-        Services.RemoveAll(typeof(IErrorCodesDescriptionSource));
-        Services.AddSingleton<IErrorCodesDescriptionSource, ErrorCodesDescriptionFromConfigurationSource>();
-        ErrorCodesSourceAddedType = typeof(ErrorCodesDescriptionFromConfigurationSource);
+        Services.AddSingleton<IErrorCodesDescriptionSource>(sp =>
+            new ErrorCodesDescriptionFromConfigurationSource(sp.GetRequiredService<IConfiguration>().GetSection(sectionName))
+        );
+        ErrorCodesSourceManuallyAdded = true;
 
         return this;
     }
@@ -78,18 +85,15 @@ public class DomainExceptionBuilder
     /// </summary>
     /// <param name="errorDescriptions">Dictionary of errors.</param>
     public DomainExceptionBuilder WithErrorCodesDescriptionFromMemory(
-        IDictionary<string, ErrorDescription> errorDescriptions
+        IReadOnlyDictionary<string, ErrorDescription> errorDescriptions
     )
     {
         ArgumentNullException.ThrowIfNull(errorDescriptions);
 
-        EnsureErrorCodesDescriptionSourceNotAddedYet();
-
-        Services.RemoveAll(typeof(IErrorCodesDescriptionSource));
         Services.AddSingleton<IErrorCodesDescriptionSource>(
             new ErrorCodesDescriptionInMemorySource(errorDescriptions)
         );
-        ErrorCodesSourceAddedType = typeof(ErrorCodesDescriptionInMemorySource);
+        ErrorCodesSourceManuallyAdded = true;
 
         return this;
     }
@@ -103,25 +107,9 @@ public class DomainExceptionBuilder
         Services.AddHostedService<InitHostedService>(sp => new InitHostedService(sp, ConfigureSettings));
 
         // default registration
-        if (ErrorCodesSourceAddedType is null)
+        if (!ErrorCodesSourceManuallyAdded)
         {
             WithErrorCodesDescriptionFromConfiguration();
-        }
-    }
-
-    /// <summary>
-    /// Throw if already registered error codes description source.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">
-    /// If error codes description source already registered.
-    /// </exception>
-    private void EnsureErrorCodesDescriptionSourceNotAddedYet()
-    {
-        if (ErrorCodesSourceAddedType is not null)
-        {
-            throw new InvalidOperationException(
-                $"IErrorCodesDescriptionSource already added with implementation type {ErrorCodesSourceAddedType.FullName}"
-            );
         }
     }
 }

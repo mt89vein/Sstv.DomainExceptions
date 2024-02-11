@@ -12,31 +12,31 @@ The main library in this repository.
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions -Version 1.0.0
+Install-Package Sstv.DomainExceptions -Version 2.0.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions --version 1.0.0
+dotnet add package Sstv.DomainExceptions --version 2.0.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions" Version="1.0.0" />
+<PackageReference Include="Sstv.DomainExceptions" Version="2.0.0" />
 ```
 
 ### How to use?
 
 First of all you should decide, how you want to work with error codes.
 
-Enum that decorates with ErrorDescriptionAttribute that can hold error code description, help link, error prefix. Before DomainException<TEnum> instantiated, ErrorDescriptionAttribute read from enum by it's value using cached reflection.
+Enum that decorates with ErrorDescriptionAttribute that can hold error code description, help link, error prefix.
 
 ```csharp
 // this attribute is common for all values
-[ErrorDescription(Prefix = "SSTV.", HelpLink = "https://help.myproject.ru/error-codes/{0}")]
-public enum DomainErrorCodesEnum
+[ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}")]
+public enum ErrorCodes
 {
     // this attribute override common attribute on enum type
     [ErrorDescription(
@@ -49,31 +49,77 @@ public enum DomainErrorCodesEnum
         HelpLink = "https://help.myproject.ru/error-codes/not-enough-money")]
     NotEnoughMoney = 10001,
 
-    [ErrorDescription(Prefix = "DIF.", Description = "Another prefix example")]
+    [ErrorDescription(Prefix = "DIF", Description = "Another prefix example")]
     SomethingBadHappen = 10002,
 
-    [Obsolete("Don't use this error code because it obsolete :)", true)]
-    [ErrorDescription(Prefix = "DIF.", Description = "Obsolete error code in enum")]
+    [Obsolete("Don't use this error code because it obsolete :)")]
+    [ErrorDescription(Prefix = "DIF", Description = "Obsolete error code in enum")]
     ObsoleteErrorCode = 10003,
 }
+```
 
-public sealed class MyGenericException : DomainException<DomainErrorCodesEnum>
-{
-    public MyGenericException(
-      DomainErrorCodesEnum errorCode, 
-      Exception? innerException = null
-    ) : base(errorCode, innerException)
-    {
-    }
-}
+Thats all that you need to do to start work with.
+After compile, source generator creates exception class and class with extensions methods for you:
 
-// usage
-throw new MyGenericException(DomainErrorCodesEnum.NotEnoughMoney)
+```csharp
+
+  public sealed class ErrorCodesException : DomainException
+  {
+      public static readonly IReadOnlyDictionary<ErrorCodes, ErrorDescription> ErrorDescriptions = new Dictionary<ErrorCodes, ErrorDescription>
+      {
+          [ErrorCodes.Default] = new ErrorDescription("SSTV00000", "Unhandled error code", "https://help.myproject.ru/error-codes/nothing-here", false),
+          [ErrorCodes.NotEnoughMoney] = new ErrorDescription("SSTV10001", "You have not enough money", "https://help.myproject.ru/error-codes/not-enough-money", false),
+          [ErrorCodes.SomethingBadHappen] = new ErrorDescription("DIF10002", "Another prefix example", "https://help.myproject.ru/error-codes/DIF10002", false),
+          [ErrorCodes.ObsoleteErrorCode] = new ErrorDescription("DIF10003", "Obsolete error code in enum", "https://help.myproject.ru/error-codes/DIF10003", true),
+          [ErrorCodes.WhateverElse] = new ErrorDescription("SSTV10004", "Help link with template in enum member attribute", "https://help.myproject.ru/SSTV10004/error-code", false),
+      };
+
+      public static IErrorCodesDescriptionSource ErrorCodesDescriptionSource { get; } = new ErrorCodesDescriptionInMemorySource(ErrorDescriptions.Values.ToDictionary(x => x.ErrorCode, x => x));
+
+      public ErrorCodesException(ErrorCodes errorCodes, Exception? innerException = null)
+          : base(ErrorDescriptions[errorCodes], innerException)
+      {
+      }
+  }
+
+  public static class ErrorCodesExtensions
+  {
+      public static ErrorDescription GetDescription(this ErrorCodes errorCodes)
+      {
+          return ErrorCodesException.ErrorDescriptions[errorCodes];
+      }
+
+      public static string GetErrorCode(this ErrorCodes errorCodes)
+      {
+          return ErrorCodesException.ErrorDescriptions[errorCodes].ErrorCode;
+      }
+
+      public static ErrorCodesException AsException(this ErrorCodes errorCodes, Exception? innerException = null)
+      {
+          return new ErrorCodesException(errorCodes, innerException);
+      }
+  }
+
+```
+
+Here usage example:
+
+```csharp
+
+throw new ErrorCodesException(DomainErrorCodesEnum.NotEnoughMoney)
+    .WithDetailedMessage("DetailedError")
+    .WithAdditionalData("123", 2);
+
+// or more fluent api way:
+
+throw DomainErrorCodesEnum.NotEnoughMoney
+    .AsException()
     .WithDetailedMessage("DetailedError")
     .WithAdditionalData("123", 2);
 ```
 
-or class with simple constants in it and with separate additional dictionary (that can be loaded from appsettings.json, in memory dictionary, database etc) with error code description, help link, additional context data.
+
+If you don't like enums, you can also use simple class with constants in it and with separate additional dictionary (that can be loaded from appsettings.json, in memory dictionary, database etc) with error code description, help link, additional context data.
 
 ```csharp
 public static class DomainErrorCodes
@@ -109,7 +155,7 @@ public sealed class MyException : DomainException
 // somewhere in startup.cs
 services.AddDomainException();
 
-// or if you don't want to use DI
+// or if you don't want to or cant use DI
 DomainExceptionSettings.Instance.ErrorCodesDescriptionSource = new ErrorCodesDescriptionFromConfigurationSource(configuration);
 
 // and the usage
@@ -124,16 +170,14 @@ throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)
 
 Pros:
 * All the things on the same file
-* Library can be extended with static analyzer, or unit test that can validate
-enum and it's ErrorDescriptionAttribute for completeness. Snapshot testing can save to git all the error codes, so you and track changes.
+* Library can be extended with static analyzer, or unit test that can validate enum and it's ErrorDescriptionAttribute for completeness. Snapshot testing can save to git all the error codes, so you and track changes.
 * Default code static analyzer checks enum values overlapping
-* ErrorCodesDebugView can show you the source of error code (exception and enum assemblies)
+* Zero reflection usage (thanks for source generators)
+* Source generators generates code and precompute all values that it needed, so and you can check them. Also it very fast because it ready to run.
 
 Cons:
-* All the changes should go through compile and release, even only changed description or help link,
-also you can't load this descriptions from external sources or appsettings.
-* Reflection (with cache) is used to get ErrorDescriptionAttribute at runtime.
-* Can be challenging to change error code length at the future. Recommended length is 5, e.g. SSTV.10000, so you have 9999 error codes per app or bounded context.
+* All the changes should go through compile and release, even only description or help link was changed. Also you can't load this descriptions from external sources or appsettings.
+* Can be challenging to change error code length at the future. Recommended length is 5, e.g. SSTV10000, so you have 9999 error codes per app or bounded context.
 
 ### When to choose constants?
 

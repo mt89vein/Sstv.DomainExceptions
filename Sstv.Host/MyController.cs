@@ -40,7 +40,7 @@ public class MyController : ControllerBase
     {
         // constants as error code
         throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)
-            .WithExceptionId()
+            .WithErrorId()
             .WithDetailedMessage("DetailedError")
             .WithAdditionalData("123", 2);
     }
@@ -49,12 +49,10 @@ public class MyController : ControllerBase
     public IActionResult WithGenericErrorCode()
     {
         // enums as error code
-        var x = new MyGenericException(DomainErrorCodesEnum.SomethingBadHappen)
-            .WithExceptionId()
+        throw ErrorCodes.SomethingBadHappen.AsException()
+            .WithErrorId()
             .WithDetailedMessage("DetailedError")
             .WithAdditionalData("123", 2);
-
-        throw x;
     }
 
     [HttpGet("controller-example-8")]

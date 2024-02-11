@@ -484,3 +484,9 @@ dotnet_diagnostic.CA2007.severity = none
 
 # CA1711: Identifiers should not have incorrect suffix
 dotnet_diagnostic.CA1711.severity = none
+
+# Prefer primary constructor
+dotnet_diagnostic.IDE0290.severity = none
+
+# prefer new C# 12 collection initialzier
+dotnet_diagnostic.IDE0028.severity = none

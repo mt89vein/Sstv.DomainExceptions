@@ -63,6 +63,11 @@ public sealed class DomainExceptionSettings
     public Func<string, ErrorDescription>? DefaultErrorDescriptionProvider { get; set; }
 
     /// <summary>
+    /// Invoked, when exception created.
+    /// </summary>
+    public Action<DomainException>? OnExceptionCreated { get; set; }
+
+    /// <summary>
     /// Hides public constructor.
     /// </summary>
     private DomainExceptionSettings()

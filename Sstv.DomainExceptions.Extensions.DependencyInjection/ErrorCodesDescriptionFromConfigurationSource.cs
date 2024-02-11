@@ -12,12 +12,7 @@ public sealed class ErrorCodesDescriptionFromConfigurationSource : IErrorCodesDe
     /// <summary>
     /// Section with error codes.
     /// </summary>
-    private readonly IConfigurationSection _configuration;
-
-    /// <summary>
-    /// Section name with error codes.
-    /// </summary>
-    internal static string? SectionName { get; set; }
+    private readonly IConfiguration _configuration;
 
     /// <summary>
     /// Initialize new instance of <see cref="ErrorCodesDescriptionFromConfigurationSource"/>.
@@ -30,7 +25,7 @@ public sealed class ErrorCodesDescriptionFromConfigurationSource : IErrorCodesDe
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _configuration = configuration.GetSection(SectionName ?? "DomainExceptionSettings:ErrorCodes");
+        _configuration = configuration;
     }
 
     /// <summary>

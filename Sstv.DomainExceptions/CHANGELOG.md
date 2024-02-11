@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2024-02-11
+
+- Source gen release
+- Remove all reflection usage
+- Downgrade to netstandard2.0 for source generators
+
+
 ## [1.0.0] - 2023-10-04
 
 ### Added

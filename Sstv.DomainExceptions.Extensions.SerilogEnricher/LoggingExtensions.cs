@@ -18,10 +18,7 @@ public static class LoggingExtensions
     /// <returns>Logger configurator.</returns>
     public static LoggerConfiguration WithDomainException(this LoggerEnrichmentConfiguration enrich)
     {
-        if (enrich == null)
-        {
-            throw new ArgumentNullException(nameof(enrich));
-        }
+        ArgumentNullException.ThrowIfNull(enrich);
 
         return enrich.With<DomainExceptionEnricher>();
     }
