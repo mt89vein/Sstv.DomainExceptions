@@ -42,7 +42,7 @@ For usage example, you can look the sample [here](./Sstv.Host).
 
 Sample also use [Hellang.Middleware.ProblemDetails](https://www.nuget.org/packages/Hellang.Middleware.ProblemDetails/),
 that very easy to automatically convert response into [ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807)
-format.
+format.  
 Also, if you are using .NET 8, then can
 try [IExceptionHandler](https://devblogs.microsoft.com/dotnet/asp-net-core-updates-in-dotnet-8-preview-5/#iexceptionhandler)
 for the same purpose.
