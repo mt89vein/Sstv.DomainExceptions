@@ -16,7 +16,7 @@ public static class MinimalEndpoints
         app.MapGet("/minimal-api-example-2", () =>
         {
             // using enums
-            throw ErrorCodes.NotEnoughMoney.AsException()
+            throw ErrorCodes.NotEnoughMoney.ToException()
                 .WithDetailedMessage("You want 500, but your account balance is 300.");
         });
 

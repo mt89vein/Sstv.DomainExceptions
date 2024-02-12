@@ -18,12 +18,17 @@ internal sealed class Constants
     /// <summary>
     /// Full name of <see cref="ATTRIBUTE_CLASS_NAME"/>.
     /// </summary>
-    public const string ATTRIBUTE_FULL_NAME = NAMESPACE + "." + ATTRIBUTE_CLASS_NAME + "Attribute";
+    public const string ERROR_DESCRIPTION_ATTRIBUTE_FULL_NAME = NAMESPACE + "." + ATTRIBUTE_CLASS_NAME + "Attribute";
 
     /// <summary>
     /// Error description holder class name.
     /// </summary>
     public const string ERROR_DESCRIPTION_CLASS_NAME = "ErrorDescription";
+
+    /// <summary>
+    /// Exception config attribute.
+    /// </summary>
+    public const string EXCEPTION_CONFIG_ATTRIBUTE_FULL_NAME = NAMESPACE + "." + "ExceptionConfigAttribute";
 
     public static class NamedArguments
     {
@@ -31,5 +36,6 @@ internal sealed class Constants
         public const string PREFIX = "Prefix";
         public const string DESCRIPTION = "Description";
         public const string ERROR_CODE_LENGTH = "ErrorCodeLength";
+        public const string CLASS_NAME = "ClassName";
     }
 }

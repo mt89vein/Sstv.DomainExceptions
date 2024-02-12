@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2024-02-12
+
+- Adds [ExceptionConfig] attribute, for configuring the name of generated exception.
+- Exception now generated as partial class
+- AsException extensions method renamed to ToException
+
+
 ## [2.0.0] - 2024-02-11
 
 - Source gen release

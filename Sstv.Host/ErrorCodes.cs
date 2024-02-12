@@ -3,6 +3,7 @@
 namespace Sstv.Host;
 
 [ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}")]
+[ExceptionConfig(ClassName = "CoreException")]
 public enum ErrorCodes
 {
     [ErrorDescription(

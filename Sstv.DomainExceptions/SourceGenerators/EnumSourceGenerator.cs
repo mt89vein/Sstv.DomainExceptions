@@ -58,7 +58,7 @@ internal sealed class EnumSourceGenerator : IIncrementalGenerator
                 var containingTypeSymbol = attributeSymbol.ContainingType?
                     .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                     .Replace("global::", "");
-                if (containingTypeSymbol is not Constants.ATTRIBUTE_FULL_NAME)
+                if (containingTypeSymbol is not Constants.ERROR_DESCRIPTION_ATTRIBUTE_FULL_NAME)
                 {
                     continue;
                 }
@@ -114,9 +114,17 @@ internal sealed class EnumSourceGenerator : IIncrementalGenerator
     )
     {
         var errorDescriptionAttributeSymbol =
-            compilation.GetTypeByMetadataName(Constants.ATTRIBUTE_FULL_NAME);
+            compilation.GetTypeByMetadataName(Constants.ERROR_DESCRIPTION_ATTRIBUTE_FULL_NAME);
 
         if (errorDescriptionAttributeSymbol is null)
+        {
+            return null;
+        }
+
+        var exceptionConfigAttributeSymbol =
+            compilation.GetTypeByMetadataName(Constants.EXCEPTION_CONFIG_ATTRIBUTE_FULL_NAME);
+
+        if (exceptionConfigAttributeSymbol is null)
         {
             return null;
         }
@@ -136,7 +144,8 @@ internal sealed class EnumSourceGenerator : IIncrementalGenerator
 
             var enumInfo = ErrorCodeDescriptionFromEnumParser.ParseEnum(
                 enumSymbol,
-                errorDescriptionAttributeSymbol
+                errorDescriptionAttributeSymbol,
+                exceptionConfigAttributeSymbol
             );
 
             ct.ThrowIfCancellationRequested();

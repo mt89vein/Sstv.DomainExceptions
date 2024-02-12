@@ -36,6 +36,7 @@ Enum that decorates with ErrorDescriptionAttribute that can hold error code desc
 ```csharp
 // this attribute is common for all values
 [ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}")]
+[ExceptionConfig(ClassName = "CoreException")]
 public enum ErrorCodes
 {
     // this attribute override common attribute on enum type
@@ -63,7 +64,7 @@ After compile, source generator creates exception class and class with extension
 
 ```csharp
 
-  public sealed class ErrorCodesException : DomainException
+  public sealed class CoreException : DomainException
   {
       public static readonly IReadOnlyDictionary<ErrorCodes, ErrorDescription> ErrorDescriptions = new Dictionary<ErrorCodes, ErrorDescription>
       {
@@ -76,7 +77,7 @@ After compile, source generator creates exception class and class with extension
 
       public static IErrorCodesDescriptionSource ErrorCodesDescriptionSource { get; } = new ErrorCodesDescriptionInMemorySource(ErrorDescriptions.Values.ToDictionary(x => x.ErrorCode, x => x));
 
-      public ErrorCodesException(ErrorCodes errorCodes, Exception? innerException = null)
+      public CoreException(ErrorCodes errorCodes, Exception? innerException = null)
           : base(ErrorDescriptions[errorCodes], innerException)
       {
       }
@@ -86,17 +87,17 @@ After compile, source generator creates exception class and class with extension
   {
       public static ErrorDescription GetDescription(this ErrorCodes errorCodes)
       {
-          return ErrorCodesException.ErrorDescriptions[errorCodes];
+          return CoreException.ErrorDescriptions[errorCodes];
       }
 
       public static string GetErrorCode(this ErrorCodes errorCodes)
       {
-          return ErrorCodesException.ErrorDescriptions[errorCodes].ErrorCode;
+          return CoreException.ErrorDescriptions[errorCodes].ErrorCode;
       }
 
-      public static ErrorCodesException AsException(this ErrorCodes errorCodes, Exception? innerException = null)
+      public static CoreException ToException(this ErrorCodes errorCodes, Exception? innerException = null)
       {
-          return new ErrorCodesException(errorCodes, innerException);
+          return new CoreException(errorCodes, innerException);
       }
   }
 
@@ -106,14 +107,14 @@ Here usage example:
 
 ```csharp
 
-throw new ErrorCodesException(DomainErrorCodesEnum.NotEnoughMoney)
+throw new CoreException(DomainErrorCodesEnum.NotEnoughMoney)
     .WithDetailedMessage("DetailedError")
     .WithAdditionalData("123", 2);
 
 // or more fluent api way:
 
 throw DomainErrorCodesEnum.NotEnoughMoney
-    .AsException()
+    .ToException()
     .WithDetailedMessage("DetailedError")
     .WithAdditionalData("123", 2);
 ```

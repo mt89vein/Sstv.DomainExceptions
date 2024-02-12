@@ -23,14 +23,18 @@ internal static class CodeGenerator
         GenerationContext context
     )
     {
-        GenerateEnumExtensionsClass(errorCodeEnumInfo, productionContext, context);
-        GenerateExceptionClass(errorCodeEnumInfo, productionContext, context);
+        var exceptionClassName = errorCodeEnumInfo.ExceptionConfigAttributeInfo.ClassName
+                                 ?? errorCodeEnumInfo.EnumName + "Exception";
+
+        GenerateEnumExtensionsClass(errorCodeEnumInfo, productionContext, context, exceptionClassName);
+        GenerateExceptionClass(errorCodeEnumInfo, productionContext, context, exceptionClassName);
     }
 
     private static void GenerateExceptionClass(
         ErrorCodeEnumInfo errorCodeEnumInfo,
         SourceProductionContext productionContext,
-        GenerationContext context
+        GenerationContext context,
+        string exceptionClassName
     )
     {
         var builder = context.GetBuilder();
@@ -53,7 +57,7 @@ internal static class CodeGenerator
         builder.AppendLine();
 
         builder.AppendFormat("namespace {0}\n{{\n", errorCodeEnumInfo.Namespace);
-        builder.AppendFormat("    public sealed class {0}Exception : DomainException", errorCodeEnumInfo.EnumName);
+        builder.AppendFormat("    public sealed partial class {0} : DomainException", exceptionClassName);
         builder.AppendLine();
         builder.AppendLine("    {");
 
@@ -97,7 +101,7 @@ internal static class CodeGenerator
 
         #region Constructor
 
-        builder.AppendFormat("        public {0}Exception({0} {1}, Exception{2} innerException = null)", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName(), context.NullableEnabled ? "?" : string.Empty);
+        builder.AppendFormat("        public {0}({1} {2}, Exception{3} innerException = null)", exceptionClassName, errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName(), context.NullableEnabled ? "?" : string.Empty);
         builder.AppendLine();
         builder.AppendFormat("            : base(ErrorDescriptions[{0}], innerException)", errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
@@ -110,13 +114,14 @@ internal static class CodeGenerator
 
         builder.AppendLine("}");
 
-        productionContext.AddSource($"{errorCodeEnumInfo.EnumName}Exception.g.cs", SourceText.From(builder.ToString(), Encoding.UTF8));
+        productionContext.AddSource($"{exceptionClassName}.g.cs", SourceText.From(builder.ToString(), Encoding.UTF8));
     }
 
     private static void GenerateEnumExtensionsClass(
         ErrorCodeEnumInfo errorCodeEnumInfo,
         SourceProductionContext productionContext,
-        GenerationContext context
+        GenerationContext context,
+        string exceptionClassName
     )
     {
         var builder = context.GetBuilder();
@@ -136,7 +141,7 @@ internal static class CodeGenerator
         builder.AppendLine();
 
         builder.AppendFormat("namespace {0}\n{{\n", errorCodeEnumInfo.Namespace);
-        builder.AppendFormat("    public static class {0}Extensions", errorCodeEnumInfo.EnumName);
+        builder.AppendFormat("    public static class {0}Extensions", exceptionClassName);
         builder.AppendLine();
         builder.AppendLine("    {");
 
@@ -145,7 +150,7 @@ internal static class CodeGenerator
         builder.AppendFormat("        public static {0} GetDescription(this {1} {2})", Constants.ERROR_DESCRIPTION_CLASS_NAME, errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
         builder.AppendLine("        {");
-        builder.AppendFormat("            return {0}Exception.ErrorDescriptions[{1}];", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName());
+        builder.AppendFormat("            return {0}.ErrorDescriptions[{1}];", exceptionClassName, errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
         builder.AppendLine("        }");
 
@@ -158,7 +163,7 @@ internal static class CodeGenerator
         builder.AppendFormat("        public static string GetErrorCode(this {0} {1})", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
         builder.AppendLine("        {");
-        builder.AppendFormat("            return {0}Exception.ErrorDescriptions[{1}].ErrorCode;", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName());
+        builder.AppendFormat("            return {0}.ErrorDescriptions[{1}].ErrorCode;", exceptionClassName, errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
         builder.AppendLine("        }");
 
@@ -168,10 +173,10 @@ internal static class CodeGenerator
 
         #region extension method to create exception
 
-        builder.AppendFormat("        public static {0}Exception AsException(this {0} {1}, Exception{2} innerException = null)", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName(), context.NullableEnabled ? "?" : string.Empty);
+        builder.AppendFormat("        public static {0} ToException(this {1} {2}, Exception{3} innerException = null)", exceptionClassName, errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName(), context.NullableEnabled ? "?" : string.Empty);
         builder.AppendLine();
         builder.AppendLine("        {");
-        builder.AppendFormat("            return new {0}Exception({1}, innerException);", errorCodeEnumInfo.EnumName, errorCodeEnumInfo.GetVariableName());
+        builder.AppendFormat("            return new {0}({1}, innerException);", exceptionClassName, errorCodeEnumInfo.GetVariableName());
         builder.AppendLine();
         builder.AppendLine("        }");
 

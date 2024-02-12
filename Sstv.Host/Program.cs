@@ -27,7 +27,7 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddDomainExceptions(b =>
 {
-    b.WithErrorCodesDescriptionSource(ErrorCodesException.ErrorCodesDescriptionSource);
+    b.WithErrorCodesDescriptionSource(CoreException.ErrorCodesDescriptionSource);
     b.WithErrorCodesDescriptionSource(SecondErrorCodesException.ErrorCodesDescriptionSource);
     b.WithErrorCodesDescriptionFromConfiguration();
 

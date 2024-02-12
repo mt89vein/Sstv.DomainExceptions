@@ -49,7 +49,7 @@ public class MyController : ControllerBase
     public IActionResult WithGenericErrorCode()
     {
         // enums as error code
-        throw ErrorCodes.SomethingBadHappen.AsException()
+        throw ErrorCodes.SomethingBadHappen.ToException()
             .WithErrorId()
             .WithDetailedMessage("DetailedError")
             .WithAdditionalData("123", 2);

@@ -29,10 +29,16 @@ internal sealed class ErrorCodeEnumInfo
     /// </summary>
     public ErrorDescriptionAttributeInfo ErrorDescription { get; }
 
+    /// <summary>
+    /// Exception generation config.
+    /// </summary>
+    public ExceptionConfigAttributeInfo ExceptionConfigAttributeInfo { get; set; }
+
     internal ErrorCodeEnumInfo(
         string enumEnumName,
         string @namespace,
         ErrorDescriptionAttributeInfo errorDescription,
+        ExceptionConfigAttributeInfo exceptionConfigAttributeInfo,
         ErrorCodeEnumMemberInfo[] members
     )
     {
@@ -40,6 +46,7 @@ internal sealed class ErrorCodeEnumInfo
         Namespace = @namespace;
         Members = members;
         ErrorDescription = errorDescription;
+        ExceptionConfigAttributeInfo = exceptionConfigAttributeInfo;
     }
 
     /// <summary>

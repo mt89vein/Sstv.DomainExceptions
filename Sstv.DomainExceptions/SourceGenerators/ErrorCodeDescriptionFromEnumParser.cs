@@ -14,27 +14,36 @@ internal static class ErrorCodeDescriptionFromEnumParser
     /// </summary>
     /// <param name="enumSymbol">Symbol represents enum.</param>
     /// <param name="errorDescriptionAttributeSymbol">ErrorCodeDescriptionAttribute type symbol.</param>
+    /// <param name="exceptionConfigAttributeSymbol">ExceptionConfigAttribute type symbol.</param>
     /// <returns>Extracted info from enum</returns>
     /// <remarks>
     /// Given <paramref name="enumSymbol"/> MUST be marked with [ErrorCodeDescription].
     /// </remarks>
     public static ErrorCodeEnumInfo ParseEnum(
         INamedTypeSymbol enumSymbol,
-        INamedTypeSymbol errorDescriptionAttributeSymbol
+        INamedTypeSymbol errorDescriptionAttributeSymbol,
+        INamedTypeSymbol exceptionConfigAttributeSymbol
     )
     {
         if (enumSymbol is null)
         {
             throw new ArgumentNullException(nameof(enumSymbol), "enumSymbol cannot be null");
         }
+
         if (errorDescriptionAttributeSymbol is null)
         {
             throw new ArgumentNullException(nameof(errorDescriptionAttributeSymbol), "errorDescriptionAttributeSymbol cannot be null");
         }
 
+        if (exceptionConfigAttributeSymbol is null)
+        {
+            throw new ArgumentNullException(nameof(exceptionConfigAttributeSymbol), "exceptionConfigAttributeSymbol cannot be null");
+        }
+
         var members = enumSymbol.GetMembers();
 
-        var attributeInfo = ExtractErrorDescriptionAttributeInfo(enumSymbol, errorDescriptionAttributeSymbol);
+        var errorDescriptionAttributeInfo = ExtractErrorDescriptionAttributeInfo(enumSymbol, errorDescriptionAttributeSymbol);
+        var exceptionConfigAttributeInfo = ExtractExceptionConfigAttributeInfo(enumSymbol, exceptionConfigAttributeSymbol);
 
         var @namespace = GetResultNamespace(enumSymbol);
         var enumName = SymbolDisplay.FormatLiteral(enumSymbol.Name, false);
@@ -55,7 +64,8 @@ internal static class ErrorCodeDescriptionFromEnumParser
         return new ErrorCodeEnumInfo(
             enumName,
             @namespace,
-            attributeInfo,
+            errorDescriptionAttributeInfo,
+            exceptionConfigAttributeInfo,
             memberInfos
         );
     }
@@ -115,6 +125,50 @@ internal static class ErrorCodeDescriptionFromEnumParser
     }
 
     /// <summary>
+    /// Returns configuration of exception generation.
+    /// </summary>
+    private static ExceptionConfigAttributeInfo ExtractExceptionConfigAttributeInfo(
+        ISymbol enumSymbol,
+        INamedTypeSymbol exceptionConfigAttributeSymbol
+    )
+    {
+        var info = new ExceptionConfigAttributeInfo();
+
+        // Search for [ExceptionConfigAttribute] with at least 1 set property
+        if (enumSymbol.GetAttributes() is { Length: > 0 } attributes &&
+            attributes.FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, exceptionConfigAttributeSymbol)) is
+            {
+                NamedArguments.Length: > 0
+            } attrInstance)
+        {
+            foreach (var namedArgument in attrInstance.NamedArguments)
+            {
+                // Prevent nulls
+                if (namedArgument.Value is not
+                    {
+                        IsNull: false,
+                        Kind: TypedConstantKind.Primitive,
+                        Value: not null
+                    } value)
+                {
+                    continue;
+                }
+
+                switch (namedArgument.Key)
+                {
+                    case Constants.NamedArguments.CLASS_NAME:
+                        info = info with { ClassName = GetConstantStringValue(value) };
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        return info;
+    }
+
+    /// <summary>
     /// Method to extract information from [ErrorDescription] attribute: properties, arguments etc...
     /// </summary>
     private static ErrorDescriptionAttributeInfo ExtractErrorDescriptionAttributeInfo(
@@ -165,13 +219,13 @@ internal static class ErrorCodeDescriptionFromEnumParser
         }
 
         return info;
+    }
 
-        static string? GetConstantStringValue(TypedConstant constant)
-        {
-            return constant.Value?.ToString() is { Length: > 0 } notEmptyString &&
-                   !string.IsNullOrWhiteSpace(notEmptyString)
-                ? notEmptyString
-                : null;
-        }
+    private static string? GetConstantStringValue(TypedConstant constant)
+    {
+        return constant.Value?.ToString() is { Length: > 0 } notEmptyString &&
+               !string.IsNullOrWhiteSpace(notEmptyString)
+            ? notEmptyString
+            : null;
     }
 }
