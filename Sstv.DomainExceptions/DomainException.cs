@@ -73,13 +73,12 @@ public abstract class DomainException : Exception
             }
         }
 
-        var instance = DomainExceptionSettings.Instance;
-        if (instance.GenerateExceptionIdAutomatically)
+        if (DomainExceptionSettings.Instance.GenerateExceptionIdAutomatically)
         {
             WithErrorId();
         }
 
-        instance.OnExceptionCreated?.Invoke(this);
+        DomainExceptionSettings.Instance.OnExceptionCreated?.Invoke(this);
     }
 
     /// <summary>

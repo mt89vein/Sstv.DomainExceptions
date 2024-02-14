@@ -39,6 +39,11 @@ builder.Services.AddDomainExceptions(b =>
         settings.ErrorCodesDescriptionSource = null;          // manually set your own error description source instance
         settings.DefaultErrorDescriptionProvider =            // override default error description func
             errorCode => new ErrorDescription(errorCode, "N/A"); // default func
+
+        settings.OnExceptionCreated += exception =>
+        {
+            Console.WriteLine(exception.ToString());
+        };
     };
 });
 

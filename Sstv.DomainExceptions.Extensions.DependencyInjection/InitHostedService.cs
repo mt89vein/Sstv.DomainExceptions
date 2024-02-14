@@ -15,12 +15,11 @@ internal sealed class InitHostedService : BackgroundService
     /// <param name="configure">User provided configure action.</param>
     public InitHostedService(IServiceProvider sp, Action<IServiceProvider, DomainExceptionSettings>? configure)
     {
-        var instance = DomainExceptionSettings.Instance;
-        configure?.Invoke(sp, instance);
+        configure?.Invoke(sp, DomainExceptionSettings.Instance);
 
-        if (instance.CollectErrorCodesMetricAutomatically)
+        if (DomainExceptionSettings.Instance.CollectErrorCodesMetricAutomatically)
         {
-            instance.OnExceptionCreated = ErrorCodesMeter.Measure;
+            DomainExceptionSettings.Instance.OnExceptionCreated += ErrorCodesMeter.Measure;
         }
 
         DomainExceptionSettings.ErrorDescriptionSourceGetter =
