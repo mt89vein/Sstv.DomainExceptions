@@ -199,6 +199,15 @@ public abstract class DomainException : Exception
     }
 
     /// <summary>
+    /// Returns current error description.
+    /// </summary>
+    /// <returns>Error description.</returns>
+    public ErrorDescription GetDescription()
+    {
+        return _errorDescription;
+    }
+
+    /// <summary>
     /// Returns error description by error code.
     /// </summary>
     /// <param name="errorCode">Error code.</param>

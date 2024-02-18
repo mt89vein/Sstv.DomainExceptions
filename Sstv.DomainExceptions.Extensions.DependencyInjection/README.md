@@ -12,34 +12,34 @@ This library brings to Sstv.DomainExceptions additional capabilities to register
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 2.1.0
+Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 2.2.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 2.1.0
+dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 2.2.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="2.1.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="2.2.0" />
 ```
 
 ## How to use?
 
 ### Register to Dependency injection:
-Call `AddDomainException` extension method on IServiceCollection,
+Call `AddDomainExceptions` extension method on IServiceCollection,
 and optionally configure it's behaviour:
 
 ```csharp
-services.AddDomainException();
+services.AddDomainExceptions();
 ```
 
 ### Configure settings:
 ```csharp
-services.AddDomainException(builder =>
+services.AddDomainExceptions(builder =>
 {
     builder.ConfigureSettings = (sp, settings) =>
     {
@@ -61,7 +61,7 @@ services.AddDomainException(builder =>
 If you use constants over enums, you can choose how to provide error codes description:
 
 ```csharp
-services.AddDomainException(bulder =>
+services.AddDomainExceptions(bulder =>
 {
     // register your own implementation of IErrorCodesDescriptionSource as Singleton
     bulder.WithErrorCodesDescriptionSource<MyAwesomeSource>();
@@ -104,7 +104,7 @@ Below example of appsettings.json, if you choose `WithErrorCodesDescriptionFromC
 
 if you don't choose any of ErrorCodesDescription, `WithErrorCodesDescriptionFromConfiguration` is would be set by default, so you can just add to DI and go and fill the appsettings! :)
 ```csharp
-services.AddDomainException();
+services.AddDomainExceptions();
 ```
 
 ### Metric collection using OpenTelemetry
@@ -165,7 +165,7 @@ Sometimes we want to see all the error codes in application, how they are config
 For this purpose, you can call `UseErrorCodesDebugView` on `DomainExceptionBuilder`
 
 ```csharp
-services.AddDomainException(builder =>
+services.AddDomainExceptions(builder =>
 {
     // in this example used default values
     builder.UseErrorCodesDebugView("/error-codes", port: 8082);
