@@ -3,8 +3,8 @@ Sstv.DomainExceptions
 
 ### What is DomainExceptions?
 
-DomainExceptions is a simple little library build to provide convenient way to markup code with error codes,
-to add an error description, enrich logs with error code, context data, collect error code metrics and so on.
+DomainExceptions is a simple little library built to provide a convenient way to markup code with error codes,
+to add an error description, enrich logs with error code and context data, collect error code metrics, and so on.
 
 ### What is an error code?
 
@@ -15,15 +15,15 @@ or [bounded context](https://martinfowler.com/bliki/BoundedContext.html).
 
 ### Purpose
 
-Applications often encounter exceptions and developers usually spend too little time to do exceptions properly.  
-Exceptions can help us to notify about error, stop processing and avoid potentially corrupting data, provide some
-context to it for further research and fix.  
+Applications often encounter exceptions, and developers usually spend too little time handling them properly.
+Exceptions can help us to notify errors, stop processing, avoid potentially corrupting data, and provide some
+context to it for further research and fixing. 
 If we designate all the code with unique error codes, it will be faster to determine the root of the problem when it
-arises.  
-When user occurs some error, we can show error code to him, and provide link to the helpful wiki page or user
-documentation for this error code, Using so user can fix the problem by himself or share it to the technical support.  
-Technical support can look his own wiki, find article by error code, read the solution or recommendations how to solve
-the problem or avoid this concrete error, and maybe do automation scripts and help to user. Error codes can save a lot
+arises.
+When a user occurs an error, we can show the error code to him and provide a link to the helpful wiki page or user
+documentation for this error code, Using this, the user can fix the problem by himself or share it with technical support. 
+Technical support can look at his own wiki, find articles by error code, read the solution or recommendations on how to solve
+the problem or avoid this concrete error, and maybe do automation scripts and help the user. Error codes can save a lot 
 of time in investigation problems.
 
 ### Getting started
