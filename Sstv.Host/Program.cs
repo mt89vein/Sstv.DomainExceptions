@@ -2,13 +2,13 @@
 // https://github.com/dotnet/roslyn-analyzers/issues/6141
 #pragma warning disable CA1852
 
-using System.Text.Json;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.DomainExceptions.Extensions.ProblemDetails;
 using Sstv.Host;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +24,7 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddDomainExceptions(b =>
 {
-    b.WithErrorCodesDescriptionSource(CoreException.ErrorCodesDescriptionSource);
+    b.WithErrorCodesDescriptionSource(FirstException.ErrorCodesDescriptionSource);
     b.WithErrorCodesDescriptionSource(SecondErrorCodesException.ErrorCodesDescriptionSource);
     b.WithErrorCodesDescriptionFromConfiguration();
     b.UseDomainExceptionHandler();
@@ -38,9 +38,9 @@ builder.Services.AddDomainExceptions(b =>
         settings.DefaultErrorDescriptionProvider =            // override default error description func
             errorCode => new ErrorDescription(errorCode, "N/A"); // default func
 
-        settings.OnExceptionCreated += exception =>
+        settings.OnErrorCreated += (error, _) =>
         {
-            Console.WriteLine(exception.ToString());
+            Console.WriteLine(error.ToString());
         };
     };
 });
@@ -52,7 +52,7 @@ builder.Services
         {
             if (context.Exception is DomainException de)
             {
-                context.ProblemDetails.Status = context.HttpContext.Response.StatusCode = ErrorCodeMapping.MapToStatusCode(de.ErrorCode);
+                context.ProblemDetails.Status = context.HttpContext.Response.StatusCode = ErrorCodeMapping.MapToStatusCode(de.GetDescription());
             }
             else
             {

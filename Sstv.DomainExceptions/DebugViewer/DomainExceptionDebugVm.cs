@@ -11,5 +11,5 @@ public class DomainExceptionDebugVm
     /// <summary>
     /// Configured error codes.
     /// </summary>
-    public IReadOnlyCollection<DomainExceptionCodeDebugVm> ErrorCodes { get; set; } = Array.Empty<DomainExceptionCodeDebugVm>();
+    public IReadOnlyCollection<DomainExceptionCodeDebugVm> ErrorCodes { get; set; } = [];
 }

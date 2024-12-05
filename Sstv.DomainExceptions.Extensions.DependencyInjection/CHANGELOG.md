@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2024-12-05
+
+- Update to .NET 9
+
+BREAKING CHANGES:
+- OpenTelemetry.Api dependency upgraded to 1.10.0
+- Dropped support of any .NET lower that .NET 9
+- ErrorCodesMeter now accept ErrorDescription and instance of error, instead of DomainException. This helps to use not only exceptions, but also Result pattern.
+
 ## [2.0.0] - 2024-02-11
 
 - Source gen release

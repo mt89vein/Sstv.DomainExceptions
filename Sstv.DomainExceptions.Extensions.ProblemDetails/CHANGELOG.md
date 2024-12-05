@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2024-12-05
+
+- Update to .NET 9
+
+BREAKING CHANGES:
+- Dropped support of any .NET lower that .NET 9
+- No more replace Microsoft.AspNetCore.Http.DefaultProblemDetailsWriter by Rfc7231ProblemDetailsWriter. Bug https://github.com/dotnet/aspnetcore/issues/52577 was fixed 
+
 ## [2.2.0] - 2024-02-18
 
 ### Added

@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2024-12-05
+
+- Update to .NET 9
+
+BREAKING CHANGES:
+- Serilog dependency upgraded to 4.1.0
+- Dropped support of any .NET lower that .NET 9
+
 ## [2.0.0] - 2024-02-11
 
 - Source gen release

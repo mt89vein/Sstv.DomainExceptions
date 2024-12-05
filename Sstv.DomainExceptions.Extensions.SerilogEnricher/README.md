@@ -13,19 +13,19 @@ When you write to log, serilog can attach some extra data to you logging message
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.SerilogEnricher -Version 2.2.0
+Install-Package Sstv.DomainExceptions.Extensions.SerilogEnricher -Version 3.0.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.SerilogEnricher --version 2.2.0
+dotnet add package Sstv.DomainExceptions.Extensions.SerilogEnricher --version 3.0.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.SerilogEnricher" Version="2.2.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.SerilogEnricher" Version="3.0.0" />
 ```
 
 ### How to use?

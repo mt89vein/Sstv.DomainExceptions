@@ -42,13 +42,13 @@ public sealed class DomainExceptionDebugViewer
                 var vm = new DomainExceptionCodeDebugVm
                 {
                     Code = errorDescription.ErrorCode,
+                    Level = errorDescription.Level.ToString(),
                     HelpLink = errorDescription.HelpLink,
                     AdditionalData = errorDescription.AdditionalData is not null &&
                                      errorDescription.AdditionalData.Count > 0
                         ? errorDescription.AdditionalData.ToDictionary(x => x.Key, x => x.Value)
                         : null,
-                    Message = errorDescription.Description,
-                    IsObsolete = errorDescription.IsObsolete
+                    Message = errorDescription.Description
                 };
 
                 dic.Add(errorDescription.ErrorCode, vm);
@@ -62,7 +62,7 @@ public sealed class DomainExceptionDebugViewer
 
         return new DomainExceptionDebugVm
         {
-            ErrorCodes = dic.Values.ToArray()
+            ErrorCodes = [.. dic.Values]
         };
     }
 }

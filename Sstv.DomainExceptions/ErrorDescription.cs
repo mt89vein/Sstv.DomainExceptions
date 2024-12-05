@@ -5,7 +5,7 @@ namespace Sstv.DomainExceptions;
 /// <summary>
 /// Describes error with additional data.
 /// </summary>
-[DebuggerDisplay("{ErrorCode}: {Description}")]
+[DebuggerDisplay("[{Level} {ErrorCode}]: {Description}")]
 public class ErrorDescription
 {
     /// <summary>
@@ -24,9 +24,9 @@ public class ErrorDescription
     public string? HelpLink { get; }
 
     /// <summary>
-    /// Is error code obsolete.
+    /// Criticality level.
     /// </summary>
-    public bool IsObsolete { get; }
+    public Level Level { get; }
 
     /// <summary>
     /// Additional data, that might be helpful for error handling.
@@ -38,14 +38,14 @@ public class ErrorDescription
     /// </summary>
     /// <param name="errorCode">Error code.</param>
     /// <param name="description">Static error code description for user.</param>
+    /// <param name="level">Criticality level.</param>
     /// <param name="helpLink">Help link for read about the error.</param>
-    /// <param name="isObsolete">Is obsolete error code.</param>
     /// <param name="additionalData">Additional data, that might be helpful for error handling.</param>
     public ErrorDescription(
         string errorCode,
         string description,
+        Level level = Level.Undefined,
         string? helpLink = null,
-        bool isObsolete = false,
         IReadOnlyDictionary<string, object>? additionalData = null
     )
     {
@@ -61,8 +61,8 @@ public class ErrorDescription
 
         ErrorCode = errorCode;
         Description = description;
-        IsObsolete = isObsolete;
         HelpLink = helpLink;
         AdditionalData = additionalData;
+        Level = level;
     }
 }

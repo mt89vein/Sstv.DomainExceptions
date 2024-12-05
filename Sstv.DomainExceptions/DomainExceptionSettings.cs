@@ -41,6 +41,11 @@ public sealed class DomainExceptionSettings
     public bool GenerateExceptionIdAutomatically { get; set; } = true;
 
     /// <summary>
+    /// Add criticality level to additional data.
+    /// </summary>
+    public bool AddCriticalityLevel { get; set; } = true;
+
+    /// <summary>
     /// Source of error codes description.
     /// </summary>
     public IErrorCodesDescriptionSource? ErrorCodesDescriptionSource
@@ -63,9 +68,9 @@ public sealed class DomainExceptionSettings
     public Func<string, ErrorDescription>? DefaultErrorDescriptionProvider { get; set; }
 
     /// <summary>
-    /// Invoked, when exception created.
+    /// Invoked, when error created.
     /// </summary>
-    public Action<DomainException>? OnExceptionCreated { get; set; }
+    public Action<ErrorDescription, object?>? OnErrorCreated { get; set; }
 
     /// <summary>
     /// Hides public constructor.

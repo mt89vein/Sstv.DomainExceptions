@@ -19,7 +19,7 @@ internal sealed class InitHostedService : BackgroundService
 
         if (DomainExceptionSettings.Instance.CollectErrorCodesMetricAutomatically)
         {
-            DomainExceptionSettings.Instance.OnExceptionCreated += ErrorCodesMeter.Measure;
+            DomainExceptionSettings.Instance.OnErrorCreated += ErrorCodesMeter.Measure;
         }
 
         DomainExceptionSettings.ErrorDescriptionSourceGetter =

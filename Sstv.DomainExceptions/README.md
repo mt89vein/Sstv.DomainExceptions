@@ -12,19 +12,19 @@ The main library in this repository.
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions -Version 2.2.0
+Install-Package Sstv.DomainExceptions -Version 3.0.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions --version 2.2.0
+dotnet add package Sstv.DomainExceptions --version 3.0.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions" Version="2.2.0" />
+<PackageReference Include="Sstv.DomainExceptions" Version="3.0.0" />
 ```
 
 ### How to use?
@@ -35,27 +35,30 @@ Enum that decorates with ErrorDescriptionAttribute that can hold error code desc
 
 ```csharp
 // this attribute is common for all values
-[ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}")]
-[ExceptionConfig(ClassName = "CoreException")]
+[ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}", Level = Level.Critical)]
+[ExceptionConfig(ClassName = "FirstException")]
 public enum ErrorCodes
 {
-    // this attribute override common attribute on enum type
     [ErrorDescription(
         Description = "Unhandled error code",
-        HelpLink = "https://help.myproject.ru/error-codes/nothing-here")]
+        HelpLink = "https://help.myproject.ru/error-codes/nothing-here",
+        Level = Level.Fatal)]
     Default = 0,
 
     [ErrorDescription(
         Description = "You have not enough money",
-        HelpLink = "https://help.myproject.ru/error-codes/not-enough-money")]
+        HelpLink = "https://help.myproject.ru/error-codes/not-enough-money",
+        Level = Level.NotError)]
     NotEnoughMoney = 10001,
 
     [ErrorDescription(Prefix = "DIF", Description = "Another prefix example")]
     SomethingBadHappen = 10002,
 
-    [Obsolete("Don't use this error code because it obsolete :)")]
-    [ErrorDescription(Prefix = "DIF", Description = "Obsolete error code in enum")]
-    ObsoleteErrorCode = 10003,
+    [ErrorDescription(
+        Description = "Help link with template in enum member attribute",
+        HelpLink = "https://help.myproject.ru/{0}/error-code"
+    )]
+    WhateverElse = 10003,
 }
 ```
 
@@ -64,40 +67,39 @@ After compile, source generator creates exception class and class with extension
 
 ```csharp
 
-  public sealed class CoreException : DomainException
-  {
-      public static readonly IReadOnlyDictionary<ErrorCodes, ErrorDescription> ErrorDescriptions = new Dictionary<ErrorCodes, ErrorDescription>
-      {
-          [ErrorCodes.Default] = new ErrorDescription("SSTV00000", "Unhandled error code", "https://help.myproject.ru/error-codes/nothing-here", false),
-          [ErrorCodes.NotEnoughMoney] = new ErrorDescription("SSTV10001", "You have not enough money", "https://help.myproject.ru/error-codes/not-enough-money", false),
-          [ErrorCodes.SomethingBadHappen] = new ErrorDescription("DIF10002", "Another prefix example", "https://help.myproject.ru/error-codes/DIF10002", false),
-          [ErrorCodes.ObsoleteErrorCode] = new ErrorDescription("DIF10003", "Obsolete error code in enum", "https://help.myproject.ru/error-codes/DIF10003", true),
-          [ErrorCodes.WhateverElse] = new ErrorDescription("SSTV10004", "Help link with template in enum member attribute", "https://help.myproject.ru/SSTV10004/error-code", false),
-      };
+    public sealed partial class FirstException : DomainException
+    {
+        public static readonly IReadOnlyDictionary<ErrorCodes, ErrorDescription> ErrorDescriptions = new Dictionary<ErrorCodes, ErrorDescription>
+        {
+            [ErrorCodes.Default] = new ErrorDescription("SSTV00000", "Unhandled error code", Level.Fatal, "https://help.myproject.ru/error-codes/nothing-here"),
+            [ErrorCodes.NotEnoughMoney] = new ErrorDescription("SSTV10001", "You have not enough money", Level.NotError, "https://help.myproject.ru/error-codes/not-enough-money"),
+            [ErrorCodes.SomethingBadHappen] = new ErrorDescription("DIF10002", "Another prefix example", Level.Critical, "https://help.myproject.ru/error-codes/DIF10002"),
+            [ErrorCodes.WhateverElse] = new ErrorDescription("SSTV10003", "Help link with template in enum member attribute", Level.Critical, "https://help.myproject.ru/SSTV10003/error-code"),
+        }.ToFrozenDictionary();
 
-      public static IErrorCodesDescriptionSource ErrorCodesDescriptionSource { get; } = new ErrorCodesDescriptionInMemorySource(ErrorDescriptions.Values.ToDictionary(x => x.ErrorCode, x => x));
+        public static IErrorCodesDescriptionSource ErrorCodesDescriptionSource { get; } = new ErrorCodesDescriptionInMemorySource(ErrorDescriptions.Values.ToFrozenDictionary(x => x.ErrorCode, x => x));
 
-      public CoreException(ErrorCodes errorCodes, Exception? innerException = null)
-          : base(ErrorDescriptions[errorCodes], innerException)
-      {
-      }
-  }
+        public FirstException(ErrorCodes errorCodes, Exception? innerException = null)
+            : base(ErrorDescriptions[errorCodes], innerException)
+        {
+        }
+    }
 
   public static class ErrorCodesExtensions
   {
       public static ErrorDescription GetDescription(this ErrorCodes errorCodes)
       {
-          return CoreException.ErrorDescriptions[errorCodes];
+          return FirstException.ErrorDescriptions[errorCodes];
       }
 
       public static string GetErrorCode(this ErrorCodes errorCodes)
       {
-          return CoreException.ErrorDescriptions[errorCodes].ErrorCode;
+          return FirstException.ErrorDescriptions[errorCodes].ErrorCode;
       }
 
-      public static CoreException ToException(this ErrorCodes errorCodes, Exception? innerException = null)
+      public static FirstException ToException(this ErrorCodes errorCodes, Exception? innerException = null)
       {
-          return new CoreException(errorCodes, innerException);
+          return new FirstException(errorCodes, innerException);
       }
   }
 
@@ -107,13 +109,13 @@ Here usage example:
 
 ```csharp
 
-throw new CoreException(DomainErrorCodesEnum.NotEnoughMoney)
+throw new FirstException(ErrorCodes.NotEnoughMoney)
     .WithDetailedMessage("DetailedError")
     .WithAdditionalData("123", 2);
 
 // or more fluent api way:
 
-throw DomainErrorCodesEnum.NotEnoughMoney
+throw ErrorCodes.NotEnoughMoney
     .ToException()
     .WithDetailedMessage("DetailedError")
     .WithAdditionalData("123", 2);
@@ -145,6 +147,7 @@ public sealed class MyException : DomainException
     "ErrorCodes": {
       "SSTV.10004": {
         "Description": "You have not enough money",
+        "Level": "Low",
         "HelpLink": "https://help.myproject.ru/error-codes/not-enough-money"
       }
     }
@@ -156,7 +159,7 @@ public sealed class MyException : DomainException
 // somewhere in startup.cs
 services.AddDomainException();
 
-// or if you don't want to or cant use DI
+// or if you don't want to or can't use DI container
 DomainExceptionSettings.Instance.ErrorCodesDescriptionSource = new ErrorCodesDescriptionFromConfigurationSource(configuration);
 
 // and the usage

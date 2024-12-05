@@ -20,21 +20,14 @@ internal sealed class ErrorCodeEnumMemberInfo
     /// </summary>
     public ErrorDescriptionAttributeInfo ErrorDescription { get; }
 
-    /// <summary>
-    /// Information from [ObsoleteAttribute].
-    /// </summary>
-    public bool IsObsolete { get; }
-
     internal ErrorCodeEnumMemberInfo(
         string enumMemberNameWithEnumName,
         string integralValue,
-        ErrorDescriptionAttributeInfo errorDescription,
-        bool isObsolete
+        ErrorDescriptionAttributeInfo errorDescription
     )
     {
         EnumMemberNameWithEnumName = enumMemberNameWithEnumName;
         IntegralValue = integralValue;
         ErrorDescription = errorDescription;
-        IsObsolete = isObsolete;
     }
 }
