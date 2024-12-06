@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2024-12-06
+
+### Changed
+
+- error_codes_total metric now have level label from error code
+
+BREAKING CHANGES:
+- ErrorCodesMeter now accept ErrorDescription and instance of error, instead of DomainException. This helps to use not only exceptions, but also Result pattern.
+
 ## [2.0.0] - 2024-02-11
 
 - Source gen release

@@ -490,3 +490,6 @@ dotnet_diagnostic.IDE0290.severity = none
 
 # prefer new C# 12 collection initialzier
 dotnet_diagnostic.IDE0028.severity = none
+
+# unused public parameter
+dotnet_diagnostic.IDE0060.severity = none

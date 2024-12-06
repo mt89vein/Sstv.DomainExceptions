@@ -78,7 +78,16 @@ public abstract class DomainException : Exception
             WithErrorId();
         }
 
-        DomainExceptionSettings.Instance.OnExceptionCreated?.Invoke(this);
+        if (DomainExceptionSettings.Instance.AddCriticalityLevel)
+        {
+            const string CRITICALITY_LEVEL = "CriticalityLevel";
+            if (!_additionalData.ContainsKey(CRITICALITY_LEVEL))
+            {
+                _additionalData.Add(CRITICALITY_LEVEL, _errorDescription.Level.ToString());
+            }
+        }
+
+        DomainExceptionSettings.Instance.OnErrorCreated?.Invoke(_errorDescription, this);
     }
 
     /// <summary>

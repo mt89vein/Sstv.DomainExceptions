@@ -35,6 +35,7 @@ internal sealed class Constants
         public const string HELP_LINK = "HelpLink";
         public const string PREFIX = "Prefix";
         public const string DESCRIPTION = "Description";
+        public const string LEVEL = "Level";
         public const string ERROR_CODE_LENGTH = "ErrorCodeLength";
         public const string CLASS_NAME = "ClassName";
     }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using Sstv.DomainExceptions;
+using System.Collections.Frozen;
 
 namespace Sstv.Host;
 
@@ -14,10 +15,17 @@ public static class ErrorCodeMapping
         // 5xx
     }.ToFrozenDictionary();
 
-    public static int MapToStatusCode(string errorCode)
+    public static int MapToStatusCode(ErrorDescription errorDescription)
     {
-        ArgumentNullException.ThrowIfNull(errorCode);
+        ArgumentNullException.ThrowIfNull(errorDescription);
 
-        return _statusCodeMap.GetValueOrDefault(errorCode, StatusCodes.Status500InternalServerError);
+        if (_statusCodeMap.TryGetValue(errorDescription.ErrorCode, out var statusCode))
+        {
+            return statusCode;
+        }
+
+        return errorDescription.Level == Level.NotError
+            ? StatusCodes.Status200OK
+            : StatusCodes.Status500InternalServerError;
     }
 }

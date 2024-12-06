@@ -16,6 +16,11 @@ internal sealed record ErrorDescriptionAttributeInfo
     public string? Description { get; set; }
 
     /// <summary>
+    /// Criticality level.
+    /// </summary>
+    public Level Level { get; set; }
+
+    /// <summary>
     /// Uri for help link.
     /// </summary>
     public string? HelpLink { get; set; }

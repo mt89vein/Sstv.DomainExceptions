@@ -1,12 +1,10 @@
 using Microsoft.Extensions.Configuration;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Sstv.DomainExceptions.Extensions.DependencyInjection;
 
 /// <summary>
 /// Error codes description source from <see cref="IConfiguration"/>.
 /// </summary>
-[SuppressMessage("Design", "CA1812: Avoid uninstantiated internal classes")]
 public sealed class ErrorCodesDescriptionFromConfigurationSource : IErrorCodesDescriptionSource
 {
     /// <summary>
@@ -48,7 +46,7 @@ public sealed class ErrorCodesDescriptionFromConfigurationSource : IErrorCodesDe
 
         var description = section[nameof(ErrorDescription.Description)];
         var helpLink = section[nameof(ErrorDescription.HelpLink)];
-        var isObsolete = section.GetValue(nameof(ErrorDescription.IsObsolete), defaultValue: false);
+        var level = section.GetValue(nameof(ErrorDescription.Level), Level.Undefined);
 
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -61,7 +59,7 @@ public sealed class ErrorCodesDescriptionFromConfigurationSource : IErrorCodesDe
             .Where(x => !string.IsNullOrWhiteSpace(x.Value))
             .ToDictionary(x => x.Key, x => (object)x.Value!);
 
-        return new ErrorDescription(errorCode, description, helpLink, isObsolete, additionalData);
+        return new ErrorDescription(errorCode, description, level, helpLink, additionalData);
     }
 
     /// <summary>

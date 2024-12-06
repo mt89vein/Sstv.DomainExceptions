@@ -26,33 +26,9 @@ public static class ErrorCodesMeter
     /// <summary>
     /// Counts error codes.
     /// </summary>
-    /// <param name="domainException">Exception.</param>
-    public static void Measure(DomainException? domainException)
-    {
-        if (!_counter.Enabled)
-        {
-            return;
-        }
-
-        if (domainException is null)
-        {
-            return;
-        }
-
-        var tagList = new TagList
-        {
-            { "code", domainException.ErrorCode },
-            { "message", domainException.Message }
-        };
-
-        _counter.Add(1, tagList);
-    }
-
-    /// <summary>
-    /// Counts error codes.
-    /// </summary>
     /// <param name="errorDescription">An error description.</param>
-    public static void Measure(ErrorDescription? errorDescription)
+    /// <param name="instance">An error instance.</param>
+    public static void Measure(ErrorDescription? errorDescription, object? instance)
     {
         if (!_counter.Enabled)
         {
@@ -67,9 +43,25 @@ public static class ErrorCodesMeter
         var tagList = new TagList
         {
             { "code", errorDescription.ErrorCode },
-            { "message", errorDescription.Description }
+            { "message", errorDescription.Description },
+            { "level", Enum.GetName(errorDescription.Level) }
         };
 
         _counter.Add(1, tagList);
+    }
+
+    /// <summary>
+    /// Counts error codes.
+    /// </summary>
+    /// <param name="domainException">Exception.</param>
+    [Obsolete("Use Measure(ErrorDescription?, object?) instead.")]
+    public static void Measure(DomainException? domainException)
+    {
+        if (domainException is null)
+        {
+            return;
+        }
+
+        Measure(domainException.GetDescription(), domainException);
     }
 }

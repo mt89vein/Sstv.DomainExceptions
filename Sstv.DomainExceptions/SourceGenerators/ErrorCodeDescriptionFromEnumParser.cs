@@ -96,8 +96,7 @@ internal static class ErrorCodeDescriptionFromEnumParser
         return new ErrorCodeEnumMemberInfo(
             enumMemberNameWithPrefix,
             integralValue,
-            errorDescriptionAttributeInfo,
-            IsObsolete(fieldSymbol)
+            errorDescriptionAttributeInfo
         );
     }
 
@@ -111,17 +110,6 @@ internal static class ErrorCodeDescriptionFromEnumParser
         return enumSymbol.ContainingNamespace
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
             .Replace("global::", "");
-    }
-
-    /// <summary>
-    /// Returns true, if enum member marked as obsolete.
-    /// </summary>
-    /// <param name="fieldSymbol">Enum member field.</param>
-    private static bool IsObsolete(IFieldSymbol fieldSymbol)
-    {
-        return fieldSymbol
-            .GetAttributes()
-            .Any(x => x.AttributeClass?.Name.Contains("Obsolete") == true);
     }
 
     /// <summary>
@@ -191,7 +179,7 @@ internal static class ErrorCodeDescriptionFromEnumParser
                 if (namedArgument.Value is not
                     {
                         IsNull: false,
-                        Kind: TypedConstantKind.Primitive,
+                        Kind: TypedConstantKind.Primitive or TypedConstantKind.Enum,
                         Value: not null
                     } value)
                 {
@@ -205,6 +193,9 @@ internal static class ErrorCodeDescriptionFromEnumParser
                         break;
                     case Constants.NamedArguments.DESCRIPTION:
                         info = info with { Description = GetConstantStringValue(value) };
+                        break;
+                    case Constants.NamedArguments.LEVEL:
+                        info = info with { Level = value.Value is Level l ? l : (Level)Enum.Parse(typeof(Level), GetConstantStringValue(value)!) };
                         break;
                     case Constants.NamedArguments.HELP_LINK:
                         info = info with { HelpLink = GetConstantStringValue(value) };

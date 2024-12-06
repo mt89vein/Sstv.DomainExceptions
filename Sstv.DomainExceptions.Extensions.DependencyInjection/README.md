@@ -12,19 +12,19 @@ This library brings to Sstv.DomainExceptions additional capabilities to register
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 2.2.0
+Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 2.3.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 2.2.0
+dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 2.3.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="2.2.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="2.3.0" />
 ```
 
 ## How to use?
@@ -46,13 +46,14 @@ services.AddDomainExceptions(builder =>
         settings.GenerateExceptionIdAutomatically = true;      // true by default
         settings.CollectErrorCodesMetricAutomatically = true;  // true by default
         settings.ThrowIfHasNoErrorCodeDescription = true;      // true by default
+        settings.AddCriticalityLevel = true;                   // true by default
 
         // manually provide you own singleton implementation of IErrorCodesDescriptionSource
         settings.ErrorCodesDescriptionSource = new MyAwesomeSource();
 
         // override default error description
         settings.DefaultErrorDescriptionProvider = 
-            errorCode => new ErrorDescription(errorCode, "N/A");
+            errorCode => new ErrorDescription(errorCode, "N/A", Level.Fatal);
     };
 });
 ```
@@ -69,9 +70,9 @@ services.AddDomainExceptions(bulder =>
     // or you can pass in memory dictionary
     bulder.WithErrorCodesDescriptionFromMemory(new Dictionary<string, ErrorDescription>
     {
-        ["SSTV.10004"] = new("SSTV.10004", "Some error description", "https://help.myproject.ru/error-codes/not-enough-money"),
-        ["SSTV.10005"] = new("SSTV.10005", "Another error", "https://help.myproject.ru/error-codes/SSTV.10005"),
-        ["SSTV.10006"] = new("SSTV.10006", "One more error", "https://help.myproject.ru/error-codes/SSTV.10006"),
+        ["SSTV.10004"] = new("SSTV.10004", "Some error description", Level.Fatal, "https://help.myproject.ru/error-codes/not-enough-money"),
+        ["SSTV.10005"] = new("SSTV.10005", "Another error", Level.Low, "https://help.myproject.ru/error-codes/SSTV.10005"),
+        ["SSTV.10006"] = new("SSTV.10006", "One more error", Level.Medium, "https://help.myproject.ru/error-codes/SSTV.10006"),
     });
 
     // or load from appsettings.json, and optionally set configuration section name.
@@ -91,11 +92,12 @@ Below example of appsettings.json, if you choose `WithErrorCodesDescriptionFromC
     "ErrorCodes": {
       "SSTV.10004": {
         "Description": "You have not enough money",
+        "Level": "Low",
         "HelpLink": "https://help.myproject.ru/error-codes/not-enough-money"
       },
       "SSTV.10005": {
-        "Description": "This is an obsolete error code from appsettings.json",
-        "IsObsolete": true
+        "Description": "This is high criticality level error code from appsettings.json",
+        "Level": "High"
       }
     }
   }
@@ -113,7 +115,7 @@ Sstv.DomainException expose public class `ErrorCodesMeter` with method `Measure`
 which called every time, when DomainException instantiated, and counts errors occured with OpenTelemetry counter metric:
 
 ```
-error_codes_total { code="SSTV.10004", message="You have not enough money" }
+error_codes_total { code="SSTV.10004", message="You have not enough money", level="Low" }
 ```
 
 This library have an extension method `AddDomainExceptionInstrumentation`, that can be called on `MeterProviderBuilder` to start collecting this metric.
@@ -182,29 +184,31 @@ output example:
 ```json
 // http://localhost:5115/error-codes
 {
-  "errorCodes": [
-    {
-      "code": "SSTV.10001",
-      "helpLink": "https://help.myproject.ru/error-codes/not-enough-money",
-      "message": "You have not enough money"
-    },
-    {
-      "code": "DIF.10003",
-      "helpLink": "https://help.myproject.ru/error-codes/DIF.10003",
-      "message": "Obsolete error code in enum",
-      "isObsolete": true
-    },
-    {
-      "code": "SSTV.10004",
-      "helpLink": "https://help.myproject.ru/error-codes/not-enough-money",
-      "message": "You have not enough money"
-    },
-    {
-      "code": "SSTV.10005",
-      "message": "This is an obsolete error code from appsettings.json",
-      "isObsolete": true
-    }
-  ]
+    "errorCodes": [
+        {
+            "code": "SSTV.10001",
+            "helpLink": "https://help.myproject.ru/error-codes/not-enough-money",
+            "message": "You have not enough money",
+            "level": "Low"
+        },
+        {
+            "code": "DIF.10003",
+            "helpLink": "https://help.myproject.ru/error-codes/DIF.10003",
+            "message": "Help link with template in enum member attribute",
+            "level": "Critical"
+        },
+        {
+            "code": "SSTV.10004",
+            "helpLink": "https://help.myproject.ru/error-codes/not-enough-money",
+            "message": "You have not enough money",
+            "level": "High"
+        },
+        {
+            "code": "SSTV.10005",
+            "message": "This is medium criticality level error code from appsettings.json",
+            "level": "Medium"
+        }
+    ]
 }
 ```
 

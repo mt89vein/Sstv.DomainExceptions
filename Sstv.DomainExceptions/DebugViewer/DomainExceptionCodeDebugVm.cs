@@ -16,6 +16,11 @@ public class DomainExceptionCodeDebugVm
     public string Code { get; set; } = null!;
 
     /// <summary>
+    /// Criticality level.
+    /// </summary>
+    public string Level { get; set; } = null!;
+
+    /// <summary>
     /// Help link address.
     /// </summary>
     public string? HelpLink { get; set; }

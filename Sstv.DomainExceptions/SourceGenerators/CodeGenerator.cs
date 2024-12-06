@@ -72,15 +72,16 @@ internal static class CodeGenerator
         {
             var errorCode = GetPrefixedErrorCode(errorCodeEnumInfo.ErrorDescription, member.ErrorDescription, member.IntegralValue);
             var helpLink = GetHelpLink(errorCodeEnumInfo.ErrorDescription, member.ErrorDescription, errorCode);
+            var level = GetLevel(errorCodeEnumInfo.ErrorDescription, member.ErrorDescription);
             var description = member.ErrorDescription.Description ?? "N/A";
 
-            builder.AppendFormat("""            [{0}] = new {1}("{2}", "{3}", "{4}", {5}),""",
+            builder.AppendFormat("""            [{0}] = new {1}("{2}", "{3}", Level.{4}, "{5}"),""",
                 member.EnumMemberNameWithEnumName,
                 Constants.ERROR_DESCRIPTION_CLASS_NAME,
                 errorCode,
                 description,
-                helpLink,
-                member.IsObsolete ? "true" : "false"
+                level.ToString(),
+                helpLink
             );
             builder.AppendLine();
         }
@@ -202,6 +203,16 @@ internal static class CodeGenerator
         }
 
         return helpLink;
+    }
+
+    private static Level GetLevel(
+        ErrorDescriptionAttributeInfo? attributeOnEnum,
+        ErrorDescriptionAttributeInfo? attributeOnEnumMember
+    )
+    {
+        return attributeOnEnumMember is not null && attributeOnEnumMember.Level != Level.Undefined
+            ? attributeOnEnumMember.Level
+            : attributeOnEnum?.Level ?? Level.Medium;
     }
 
     private static string GetPrefixedErrorCode(
