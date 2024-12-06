@@ -12,6 +12,9 @@ public enum ErrorCodes
         Level = Level.Fatal)]
     Default = 0,
 
+    [ErrorDescription(Description = "Invalid data", Level = Level.Critical)]
+    InvalidData = 1,
+
     [ErrorDescription(
         Description = "You have not enough money",
         HelpLink = "https://help.myproject.ru/error-codes/not-enough-money",
@@ -39,4 +42,3 @@ public enum SecondErrorCodes
     [ErrorDescription(Description = "Something gets wrong")]
     SomethingGetsWrong = 10000,
 }
-

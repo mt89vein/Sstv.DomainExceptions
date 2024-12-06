@@ -16,7 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.0] - 2024-12-05
 
+### Changed
+
 - Update to .NET 9
+- error_codes_total metric now have level label from error code
 
 BREAKING CHANGES:
 - OpenTelemetry.Api dependency upgraded to 1.10.0

@@ -19,6 +19,13 @@ public static class ErrorCodeMapping
     {
         ArgumentNullException.ThrowIfNull(errorDescription);
 
-        return _statusCodeMap.GetValueOrDefault(errorDescription.ErrorCode, StatusCodes.Status500InternalServerError);
+        if (_statusCodeMap.TryGetValue(errorDescription.ErrorCode, out var statusCode))
+        {
+            return statusCode;
+        }
+
+        return errorDescription.Level == Level.NotError
+            ? StatusCodes.Status200OK
+            : StatusCodes.Status500InternalServerError;
     }
 }
