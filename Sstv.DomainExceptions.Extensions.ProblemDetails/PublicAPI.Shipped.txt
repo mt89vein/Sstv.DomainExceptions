@@ -1,0 +1,8 @@
+﻿#nullable enable
+Sstv.DomainExceptions.Extensions.ProblemDetails.ErrorCodeProblemDetails
+Sstv.DomainExceptions.Extensions.ProblemDetails.ErrorCodeProblemDetails.Code.get -> string?
+Sstv.DomainExceptions.Extensions.ProblemDetails.ErrorCodeProblemDetails.Code.set -> void
+Sstv.DomainExceptions.Extensions.ProblemDetails.ErrorCodeProblemDetails.ErrorCodeProblemDetails(Sstv.DomainExceptions.DomainException! domainException) -> void
+Sstv.DomainExceptions.Extensions.ProblemDetails.ErrorCodeProblemDetails.ErrorCodeProblemDetails(Sstv.DomainExceptions.ErrorDescription! errorDescription) -> void
+Sstv.DomainExceptions.Extensions.ProblemDetails.ServiceCollectionExtensions
+static Sstv.DomainExceptions.Extensions.ProblemDetails.ServiceCollectionExtensions.UseDomainExceptionHandler(this Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder! builder) -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!

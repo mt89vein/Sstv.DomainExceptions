@@ -9,5 +9,5 @@ public interface IDomainExceptionDebugEnricher
     /// Erich <paramref name="domainExceptionCodeDebugVm"/>.
     /// </summary>
     /// <param name="domainExceptionCodeDebugVm">Domain exception debug view model.</param>
-    void Enrich(DomainExceptionCodeDebugVm domainExceptionCodeDebugVm);
+    public void Enrich(DomainExceptionCodeDebugVm domainExceptionCodeDebugVm);
 }

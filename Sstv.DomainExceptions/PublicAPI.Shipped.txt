@@ -1,0 +1,94 @@
+﻿#nullable enable
+override Sstv.DomainExceptions.DomainException.Data.get -> System.Collections.IDictionary!
+override Sstv.DomainExceptions.DomainException.HelpLink.get -> string?
+override Sstv.DomainExceptions.DomainException.Message.get -> string!
+override Sstv.DomainExceptions.DomainException.ToString() -> string!
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.AdditionalData.get -> System.Collections.Generic.Dictionary<string!, object!>?
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.AdditionalData.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Code.get -> string!
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Code.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.DomainExceptionCodeDebugVm() -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.HelpLink.get -> string?
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.HelpLink.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.IsObsolete.get -> bool
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.IsObsolete.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Level.get -> string!
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Level.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Message.get -> string?
+Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm.Message.set -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugViewer
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugViewer.DebugView() -> Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugVm!
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugViewer.DomainExceptionDebugViewer(System.Collections.Generic.IEnumerable<Sstv.DomainExceptions.DebugViewer.IDomainExceptionDebugEnricher!>! enrichers) -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugVm
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugVm.DomainExceptionDebugVm() -> void
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugVm.ErrorCodes.get -> System.Collections.Generic.IReadOnlyCollection<Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm!>!
+Sstv.DomainExceptions.DebugViewer.DomainExceptionDebugVm.ErrorCodes.set -> void
+Sstv.DomainExceptions.DebugViewer.IDomainExceptionDebugEnricher
+Sstv.DomainExceptions.DebugViewer.IDomainExceptionDebugEnricher.Enrich(Sstv.DomainExceptions.DebugViewer.DomainExceptionCodeDebugVm! domainExceptionCodeDebugVm) -> void
+Sstv.DomainExceptions.DomainException
+Sstv.DomainExceptions.DomainException.DomainException(Sstv.DomainExceptions.ErrorDescription! errorDescription, System.Exception? innerException = null) -> void
+Sstv.DomainExceptions.DomainException.DomainException(string! errorCode, System.Exception? innerException = null) -> void
+Sstv.DomainExceptions.DomainException.GetDescription() -> Sstv.DomainExceptions.ErrorDescription!
+Sstv.DomainExceptions.DomainException.ToUserViewString() -> string!
+Sstv.DomainExceptions.DomainException.WithAdditionalData(string! key, object! value) -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.DomainException.WithAdditionalData(System.Collections.Generic.Dictionary<string!, object!>! additionalData) -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.DomainException.WithAdditionalData(System.Collections.Generic.KeyValuePair<string!, object!> additionalData) -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.DomainException.WithDetailedMessage(string? detailedMessage) -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.DomainException.WithErrorId(string? errorId = null) -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.DomainExceptionSettings
+Sstv.DomainExceptions.DomainExceptionSettings.AddCriticalityLevel.get -> bool
+Sstv.DomainExceptions.DomainExceptionSettings.AddCriticalityLevel.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.CollectErrorCodesMetricAutomatically.get -> bool
+Sstv.DomainExceptions.DomainExceptionSettings.CollectErrorCodesMetricAutomatically.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.DefaultErrorDescriptionProvider.get -> System.Func<string!, Sstv.DomainExceptions.ErrorDescription!>?
+Sstv.DomainExceptions.DomainExceptionSettings.DefaultErrorDescriptionProvider.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.ErrorCodesDescriptionSource.get -> Sstv.DomainExceptions.IErrorCodesDescriptionSource?
+Sstv.DomainExceptions.DomainExceptionSettings.ErrorCodesDescriptionSource.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.GenerateExceptionIdAutomatically.get -> bool
+Sstv.DomainExceptions.DomainExceptionSettings.GenerateExceptionIdAutomatically.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.OnErrorCreated.get -> System.Action<Sstv.DomainExceptions.ErrorDescription!, object?>?
+Sstv.DomainExceptions.DomainExceptionSettings.OnErrorCreated.set -> void
+Sstv.DomainExceptions.DomainExceptionSettings.ThrowIfHasNoErrorCodeDescription.get -> bool
+Sstv.DomainExceptions.DomainExceptionSettings.ThrowIfHasNoErrorCodeDescription.set -> void
+Sstv.DomainExceptions.ErrorCodesDescriptionInMemorySource
+Sstv.DomainExceptions.ErrorCodesDescriptionInMemorySource.Enumerate() -> System.Collections.Generic.IEnumerable<Sstv.DomainExceptions.ErrorDescription!>!
+Sstv.DomainExceptions.ErrorCodesDescriptionInMemorySource.ErrorCodesDescriptionInMemorySource(System.Collections.Generic.IReadOnlyDictionary<string!, Sstv.DomainExceptions.ErrorDescription!>! errorDescriptions) -> void
+Sstv.DomainExceptions.ErrorCodesDescriptionInMemorySource.GetDescription(string! errorCode) -> Sstv.DomainExceptions.ErrorDescription?
+Sstv.DomainExceptions.ErrorDescription
+Sstv.DomainExceptions.ErrorDescription.AdditionalData.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object!>?
+Sstv.DomainExceptions.ErrorDescription.Description.get -> string!
+Sstv.DomainExceptions.ErrorDescription.ErrorCode.get -> string!
+Sstv.DomainExceptions.ErrorDescription.ErrorDescription(string! errorCode, string! description, Sstv.DomainExceptions.Level level = Sstv.DomainExceptions.Level.Undefined, string? helpLink = null, System.Collections.Generic.IReadOnlyDictionary<string!, object!>? additionalData = null) -> void
+Sstv.DomainExceptions.ErrorDescription.HelpLink.get -> string?
+Sstv.DomainExceptions.ErrorDescription.Level.get -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.ErrorDescriptionAttribute
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Description.get -> string?
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Description.set -> void
+Sstv.DomainExceptions.ErrorDescriptionAttribute.ErrorCodeLength.get -> int
+Sstv.DomainExceptions.ErrorDescriptionAttribute.ErrorCodeLength.set -> void
+Sstv.DomainExceptions.ErrorDescriptionAttribute.ErrorDescriptionAttribute() -> void
+Sstv.DomainExceptions.ErrorDescriptionAttribute.HelpLink.get -> string?
+Sstv.DomainExceptions.ErrorDescriptionAttribute.HelpLink.set -> void
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Level.get -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Level.set -> void
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Prefix.get -> string?
+Sstv.DomainExceptions.ErrorDescriptionAttribute.Prefix.set -> void
+Sstv.DomainExceptions.ExceptionConfigAttribute
+Sstv.DomainExceptions.ExceptionConfigAttribute.ClassName.get -> string?
+Sstv.DomainExceptions.ExceptionConfigAttribute.ClassName.set -> void
+Sstv.DomainExceptions.ExceptionConfigAttribute.ExceptionConfigAttribute() -> void
+Sstv.DomainExceptions.IErrorCodesDescriptionSource
+Sstv.DomainExceptions.IErrorCodesDescriptionSource.Enumerate() -> System.Collections.Generic.IEnumerable<Sstv.DomainExceptions.ErrorDescription!>!
+Sstv.DomainExceptions.IErrorCodesDescriptionSource.GetDescription(string! errorCode) -> Sstv.DomainExceptions.ErrorDescription?
+Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.Critical = 5 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.Fatal = 6 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.High = 4 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.Low = 2 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.Medium = 3 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.NotError = 1 -> Sstv.DomainExceptions.Level
+Sstv.DomainExceptions.Level.Undefined = 0 -> Sstv.DomainExceptions.Level
+static Sstv.DomainExceptions.DomainExceptionSettings.Instance.get -> Sstv.DomainExceptions.DomainExceptionSettings!
+virtual Sstv.DomainExceptions.DomainException.DetailedMessage.get -> string?
+virtual Sstv.DomainExceptions.DomainException.ErrorCode.get -> string!

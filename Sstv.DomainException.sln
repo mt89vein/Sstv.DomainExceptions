@@ -10,6 +10,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sstv.DomainExceptions.Exten
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sstv.DomainExceptions.Extensions.ProblemDetails", "Sstv.DomainExceptions.Extensions.ProblemDetails\Sstv.DomainExceptions.Extensions.ProblemDetails.csproj", "{31511AE5-A2C1-4092-84E6-A40ADF07C583}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{3366573F-4539-4077-8B5A-B3791C77549A}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

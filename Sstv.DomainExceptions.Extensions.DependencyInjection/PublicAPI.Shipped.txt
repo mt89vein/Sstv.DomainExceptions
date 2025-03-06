@@ -1,0 +1,24 @@
+﻿#nullable enable
+const Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesMeter.METER_NAME = "Sstv.DomainExceptions" -> string!
+Sstv.DomainExceptions.Extensions.DependencyInjection.DebugViewExtensions
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.ConfigureSettings.get -> System.Action<System.IServiceProvider!, Sstv.DomainExceptions.DomainExceptionSettings!>?
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.ConfigureSettings.set -> void
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.DomainExceptionBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.WithErrorCodesDescriptionFromConfiguration(string! sectionName = "DomainExceptionSettings:ErrorCodes") -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.WithErrorCodesDescriptionFromMemory(System.Collections.Generic.IReadOnlyDictionary<string!, Sstv.DomainExceptions.ErrorDescription!>! errorDescriptions) -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.WithErrorCodesDescriptionSource<TErrorCodesDescriptionSource>() -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!
+Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder.WithErrorCodesDescriptionSource<TErrorCodesDescriptionSource>(TErrorCodesDescriptionSource! instance) -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!
+Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesDescriptionFromConfigurationSource
+Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesDescriptionFromConfigurationSource.Enumerate() -> System.Collections.Generic.IEnumerable<Sstv.DomainExceptions.ErrorDescription!>!
+Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesDescriptionFromConfigurationSource.ErrorCodesDescriptionFromConfigurationSource(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesDescriptionFromConfigurationSource.GetDescription(string! errorCode) -> Sstv.DomainExceptions.ErrorDescription?
+Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesMeter
+Sstv.DomainExceptions.Extensions.DependencyInjection.MeterProviderBuilderExtensions
+Sstv.DomainExceptions.Extensions.DependencyInjection.ServiceCollectionExtensions
+static Sstv.DomainExceptions.Extensions.DependencyInjection.DebugViewExtensions.UseErrorCodesDebugView(this Microsoft.AspNetCore.Builder.IApplicationBuilder! applicationBuilder, Microsoft.AspNetCore.Http.PathString? path = null) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static Sstv.DomainExceptions.Extensions.DependencyInjection.DebugViewExtensions.UseErrorCodesDebugView(this Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder! builder, Microsoft.AspNetCore.Http.PathString? path = null, int port = 8082) -> Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!
+static Sstv.DomainExceptions.Extensions.DependencyInjection.ErrorCodesMeter.Measure(Sstv.DomainExceptions.ErrorDescription? errorDescription, object? instance) -> void
+static Sstv.DomainExceptions.Extensions.DependencyInjection.MeterProviderBuilderExtensions.AddDomainExceptionInstrumentation(this OpenTelemetry.Metrics.MeterProviderBuilder! builder) -> OpenTelemetry.Metrics.MeterProviderBuilder!
+static Sstv.DomainExceptions.Extensions.DependencyInjection.ServiceCollectionExtensions.AddDomainExceptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Sstv.DomainExceptions.Extensions.DependencyInjection.DomainExceptionBuilder!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
