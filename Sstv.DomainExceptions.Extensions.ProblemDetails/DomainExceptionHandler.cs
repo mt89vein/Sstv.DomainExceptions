@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using JetBrains.Annotations;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 
 namespace Sstv.DomainExceptions.Extensions.ProblemDetails;
@@ -6,6 +7,7 @@ namespace Sstv.DomainExceptions.Extensions.ProblemDetails;
 /// <summary>
 /// Domain exception handler.
 /// </summary>
+[UsedImplicitly]
 internal sealed class DomainExceptionHandler : IExceptionHandler
 {
     /// <summary>

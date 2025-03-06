@@ -64,6 +64,10 @@ end_of_line = lf
 [Makefile]
 indent_style = tab
 
+[*.cs]
+dotnet_public_api_analyzer.require_api_files = true
+dotnet_diagnostic.RS0041.severity = warning
+
 ##########################################
 # Default .NET Code Style Severities
 # https://docs.microsoft.com/dotnet/fundamentals/code-analysis/configuration-options#scope

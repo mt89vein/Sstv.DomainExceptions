@@ -7,7 +7,7 @@ public static class ErrorCodeMapping
 {
     private static readonly FrozenDictionary<string, int> _statusCodeMap = new Dictionary<string, int>
     {
-        // 2xx not errror
+        // 2xx not an error
         [ErrorCodes.NotEnoughMoney.GetErrorCode()] = StatusCodes.Status200OK,
 
         // 4xx
