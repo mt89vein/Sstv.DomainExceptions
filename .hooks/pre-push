@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# If the push refs start with (delete), then we're deleting a branch, so skip the pre-push hook
+STDIN=$(cat -)
+if echo "$STDIN" | grep -q "^(delete)"; then
+  echo "(delete) found at start of push refs, skipping husky pre-push hook"
+  echo $STDIN
+  exit 0
+fi
+
+# check if current branch has been pushed to upstream 
+if git rev-parse @{upstream} >/dev/null 2>&1; then
+    # get all the changed .cs files in the current branch including commited locally and not pushed yet (diff between head and upstream)
+    CHANGED_FILES=$(git diff --name-only @{upstream}..HEAD | grep '\.cs$' | sort -u)
+else
+    # if there is no upstream - take all .cs files from this branch 
+    CHANGED_FILES=$(git diff --name-only HEAD^^ | grep '\.cs$' | sort -u)
+fi
+
+# changed files are formatted
+if [ -z "$CHANGED_FILES" ]; then
+    echo "No .cs files changed, skip formatting and unit tests"
+else
+    echo "Formatting changed .cs files..."
+    dotnet format --include $CHANGED_FILES
+
+    # Check if git repo dirtied after autoformatter
+    if [ ! -z "$(git status -s)" ]; then
+        echo "Creating commit for formatting changes..."
+        echo "$CHANGED_FILES" | xargs git add
+        git commit -m "chore: auto formatting"
+    fi
+
+    dotnet test --filter "TestCategory=UnitTests"
+
+    # Check if git repo dirtied after tests (e.g. golden/snapshot tests)
+    if [ ! -z "$(git status -s)" ]; then
+        echo "There are changes after tests. Review it please carefully"
+        exit 1
+    fi
+fi
+
+exit 0

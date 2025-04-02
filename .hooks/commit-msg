@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# Commit message linter based on Conventional Commits
+# https://www.conventionalcommits.org/en/v1.0.0/
+# https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type
+
+more_info="More info: https://www.conventionalcommits.org/en/v1.0.0/"
+
+# Define allowed commit types
+allowed_types="feat|bug|ci|wip|fix|perf|refactor|docs|build|chore|revert|style|test"
+
+# Define task prefixes
+task_prefixes="SSTV"
+
+# Read the commit message from the provided file
+msg=$(head -n1 $1)
+
+echo $msg
+
+# Check if commit message length exceeds 90 characters
+if [ ${#msg} -gt 90 ]; then
+    echo "Error: Commit message exceeds 90 characters (current length: ${#msg})"
+    echo "Please shorten the commit message to 90 characters or less."
+    echo $more_info
+    exit 1
+fi
+
+# Regex pattern for Conventional Commits:
+# - Starts with allowed type
+# - Optional scope in parentheses
+# - Optional breaking change indicator (!)
+# - Colon and space, then subject (min 1 chars)
+# - Max length 90 chars
+# - No trailing dot or whitespace
+pattern="^(($allowed_types)(\([a-zA-Z0-9_-]+\)|)!?: .{1,})$"
+
+# Check if commit message matches the pattern
+if ! echo "$msg" | grep -E "$pattern"; then
+    echo "Invalid commit message: $msg Commit type must be one of [$allowed_types]"
+    echo "e.g: 'feat(${task_prefixes}-1234): subject' or 'feat: subject'"
+    echo $more_info
+    exit 1
+fi
+
+# Extract scope from the commit message
+scope=$(echo "$msg" | sed -E 's/^[a-z]+(\(([a-zA-Z0-9_-]+)\))?.*/\2/')
+
+# If no scope is provided, the commit is valid
+if [ -z "$scope" ]; then
+    exit 0
+fi
+
+# Check if scope starts with a valid task prefix
+if [ -n "$task_prefixes" ]; then
+    for prefix in $task_prefixes; do
+        if echo "$scope" | grep -q "^${prefix}-"; then
+            exit 0
+        fi
+    done
+fi
+
+# If scope doesn't match task prefix, fail
+echo "Invalid commit message: $msg"
+echo "Commit type must be one of [$allowed_types]"
+echo "e.g: 'feat(${task_prefixes}-1234): subject' or 'feat: subject'"
+echo $more_info
+
+exit 1

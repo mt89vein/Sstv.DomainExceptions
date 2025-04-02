@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# path to file with commit message
+COMMIT_MSG_FILE=$1
+
+# take current branch name
+BRANCH_NAME=$(git symbolic-ref --short HEAD)
+if [ $? -ne 0 ] || [ -z "$BRANCH_NAME" ]; then
+    exit 0
+fi
+
+# parse ticket name in Jira format. e.g. SSTV-123, where SSTV is project the name.
+TICKET_NAME=$(echo $BRANCH_NAME | { grep -Poi '[A-Z]+-[0-9]+' || true; })
+
+ORIGINAL_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# if developer already added ticket number to the scope, job done.
+if echo "$ORIGINAL_MSG" | grep '^[a-z]*([A-Za-z0-9][A-Za-z0-9-]*):' >/dev/null; then
+    exit 0
+fi
+
+# Take commit type. Everything before first colon.
+COMMIT_TYPE=$(echo "$ORIGINAL_MSG" | sed 's/^\([a-z]*\):.*/\1/;t;d')
+
+if [ -z "$COMMIT_TYPE" ]; then
+    if [ -z "$TICKET_NAME" ]; then
+        # something -> chore: something
+        NEW_MSG=$(echo "chore: $ORIGINAL_MSG")
+    else
+        # something -> chore(SSTV-123): something
+        NEW_MSG=$(echo "chore($TICKET_NAME): $ORIGINAL_MSG")
+    fi
+else
+    # if there no ticket name in branch name
+    if [ -z "$TICKET_NAME" ]; then
+        exit 0
+    else
+        # fix: something -> fix(SSTV-123): something
+        NEW_MSG=$(echo "$ORIGINAL_MSG" | sed "s/^$COMMIT_TYPE/$COMMIT_TYPE($TICKET_NAME)/")
+    fi
+fi
+
+echo "$NEW_MSG" > "$COMMIT_MSG_FILE"
+
+exit 0

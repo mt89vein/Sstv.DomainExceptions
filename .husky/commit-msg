@@ -1,8 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-dotnet husky run -v --group "commit-msg" --args "$1"
-
-echo
-echo Great work! 🥂
-echo
