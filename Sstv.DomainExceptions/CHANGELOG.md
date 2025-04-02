@@ -14,11 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.1.0] - 2025-03-06
+## [3.1.0] - 2025-04-02
 
 ### Added
 
 - Added Microsoft.CodeAnalysis.PublicApiAnalyzers to control shipped API
+- Allow to filter additional data from domain exception that will be added to ProblemDetails. Specify DomainExceptionSettings.AdditionalDataResponseIncludingFilter.
+
+### Fixed
+- DetailedMessage from DomainException not passed to ProblemDetails response
 
 
 ## [3.0.0] - 2024-12-05

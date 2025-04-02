@@ -92,3 +92,16 @@ Sstv.DomainExceptions.Level.Undefined = 0 -> Sstv.DomainExceptions.Level
 static Sstv.DomainExceptions.DomainExceptionSettings.Instance.get -> Sstv.DomainExceptions.DomainExceptionSettings!
 virtual Sstv.DomainExceptions.DomainException.DetailedMessage.get -> string?
 virtual Sstv.DomainExceptions.DomainException.ErrorCode.get -> string!
+override Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.Equals(object? obj) -> bool
+override Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.GetHashCode() -> int
+Sstv.DomainExceptions.DomainExceptionSettings.AdditionalDataResponseIncludingFilter.get -> System.Func<Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs, bool>?
+Sstv.DomainExceptions.DomainExceptionSettings.AdditionalDataResponseIncludingFilter.set -> void
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.DomainException.get -> Sstv.DomainExceptions.DomainException!
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.Equals(Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs other) -> bool
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.Key.get -> string?
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.AdditionalDataPropertyFilterArgs() -> void
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.AdditionalDataPropertyFilterArgs(Sstv.DomainExceptions.DomainException! domainException, string? key, object? value) -> void
+Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.Value.get -> object?
+static Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.operator !=(Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs left, Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs right) -> bool
+static Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.operator ==(Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs left, Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs right) -> bool
