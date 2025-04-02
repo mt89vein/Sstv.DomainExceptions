@@ -38,6 +38,8 @@ public sealed class ErrorCodeProblemDetails : Microsoft.AspNetCore.Mvc.ProblemDe
     {
         ArgumentNullException.ThrowIfNull(domainException);
 
+        Detail = domainException.DetailedMessage;
+
         foreach (DictionaryEntry e in domainException.Data)
         {
             var stringKey = e.Key as string ?? e.Key.ToString();

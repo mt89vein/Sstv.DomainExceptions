@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sstv.DomainExceptions\Sstv.DomainExceptions.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Sstv.DomainExceptions\Sstv.DomainExceptions.csproj" OutputItemType="Analyzer" />
     <ProjectReference Include="..\Sstv.DomainExceptions.Extensions.DependencyInjection\Sstv.DomainExceptions.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\Sstv.DomainExceptions.Extensions.ProblemDetails\Sstv.DomainExceptions.Extensions.ProblemDetails.csproj" />
   </ItemGroup>
