@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.DebugViewer;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
                 settings.ErrorCodesDescriptionSource = null;          // manually set your own error description source instance
                 settings.DefaultErrorDescriptionProvider =            // override default error description func
                     errorCode => new ErrorDescription(errorCode, "N/A"); // default func
+                settings.AdditionalDataResponseIncludingFilter = null; // If specified allowes to filter additional data from domain exception
 
                 var exceptionLogger = sp.GetRequiredService<ILogger<DomainException>>();
 

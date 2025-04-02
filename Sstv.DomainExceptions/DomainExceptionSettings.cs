@@ -1,4 +1,4 @@
-﻿namespace Sstv.DomainExceptions;
+namespace Sstv.DomainExceptions;
 
 /// <summary>
 /// Settings.
@@ -39,6 +39,11 @@ public sealed class DomainExceptionSettings
     /// Generate exception id automatically.
     /// </summary>
     public bool GenerateExceptionIdAutomatically { get; set; } = true;
+
+    /// <summary>
+    /// Allows to filter additonal data from DomainException to ProblemDetails response.
+    /// </summary>
+    public Func<AdditionalDataPropertyFilterArgs, bool>? AdditionalDataResponseIncludingFilter { get; set; }
 
     /// <summary>
     /// Add criticality level to additional data.
