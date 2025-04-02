@@ -12,19 +12,19 @@ This library brings to Sstv.DomainExceptions additional capabilities to create r
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.ProblemDetails -Version 2.3.0
+Install-Package Sstv.DomainExceptions.Extensions.ProblemDetails -Version 2.4.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.ProblemDetails --version 2.3.0
+dotnet add package Sstv.DomainExceptions.Extensions.ProblemDetails --version 2.4.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.ProblemDetails" Version="2.3.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.ProblemDetails" Version="2.4.0" />
 ```
 
 ## How to use?
@@ -82,6 +82,7 @@ throw ErrorCodes.NotEnoughMoney.ToException()
 {
     "type": "https://help.myproject.ru/error-codes/not-enough-money",
     "title": "You have not enough money",
+    "detail": "You want 500, but your account balance is 300.",
     "status": 200,
     "code": "SSTV10001",
     "criticalityLevel": "Low",

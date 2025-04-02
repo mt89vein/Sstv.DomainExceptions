@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2025-04-02
+
+### Added
+
+- Allow to filter additional data from domain exception that will be added to ProblemDetails. Specify DomainExceptionSettings.AdditionalDataResponseIncludingFilter.
+
+### Fixed
+
+- DetailedMessage from DomainException not passed to ProblemDetails response
+
 ## [2.3.0] - 2024-12-06
 
 - CriticalityLevel added to [ErrorDescription], also added to metric label, logs, api response. So you can use it to differ codes by its error criticality level.
