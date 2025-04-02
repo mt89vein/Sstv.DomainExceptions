@@ -9,11 +9,11 @@ public interface IErrorCodesDescriptionSource
     /// Returns <see cref="ErrorDescription"/> by <paramref name="errorCode"/>.
     /// </summary>
     /// <param name="errorCode">Error code.</param>
-    ErrorDescription? GetDescription(string errorCode);
+    public ErrorDescription? GetDescription(string errorCode);
 
     /// <summary>
     /// Returns enumeration of all error descriptions.
     /// If source is not able to provide this method, then just return Enumerable.Empty.
     /// </summary>
-    IEnumerable<ErrorDescription> Enumerate();
+    public IEnumerable<ErrorDescription> Enumerate();
 }
