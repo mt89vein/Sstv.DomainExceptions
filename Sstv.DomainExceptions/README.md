@@ -12,19 +12,19 @@ The main library in this repository.
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions -Version 3.0.0
+Install-Package Sstv.DomainExceptions -Version 3.1.0
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions --version 3.0.0
+dotnet add package Sstv.DomainExceptions --version 3.1.0
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions" Version="3.0.0" />
+<PackageReference Include="Sstv.DomainExceptions" Version="3.1.0" />
 ```
 
 ### How to use?

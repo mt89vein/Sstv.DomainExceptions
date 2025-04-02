@@ -330,3 +330,5 @@ ASALocalRun/
 #Ocelot.json
 ocelot.json
 data/
+
+!.husky/csx/

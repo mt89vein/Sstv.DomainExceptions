@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Text.Json.Serialization;
 
 namespace Sstv.DomainExceptions.Extensions.ProblemDetails;
@@ -38,6 +38,8 @@ public sealed class ErrorCodeProblemDetails : Microsoft.AspNetCore.Mvc.ProblemDe
     {
         ArgumentNullException.ThrowIfNull(domainException);
 
+        Detail = domainException.DetailedMessage;
+
         foreach (DictionaryEntry e in domainException.Data)
         {
             var stringKey = e.Key as string ?? e.Key.ToString();
@@ -46,7 +48,13 @@ public sealed class ErrorCodeProblemDetails : Microsoft.AspNetCore.Mvc.ProblemDe
             {
                 stringKey = System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(stringKey);
 
-                Extensions.TryAdd(stringKey, e.Value);
+                var filter = DomainExceptionSettings.Instance.AdditionalDataResponseIncludingFilter;
+                var add = filter is null || filter.Invoke(new AdditionalDataPropertyFilterArgs(domainException, stringKey, e.Value));
+
+                if (add)
+                {
+                    Extensions.TryAdd(stringKey, e.Value);
+                }
             }
         }
     }
