@@ -6,6 +6,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
+using Sstv.Host.Controllers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -20,8 +21,23 @@ builder.Services.AddOpenTelemetry()
         o.AddPrometheusExporter();
     });
 
+var x = ErrorCodeMethodCollector.ErrorCodesByMethod[
+    typeof(OrderController).FullName + "." + nameof(OrderController.CreateOrder)];
+
+var deepNested = ErrorCodeMethodCollector.ErrorCodesByMethod[
+    "Sstv.Host.Nested.Level1.Level2.DeepNestedService.ProcessDeep"];
+
+Console.WriteLine($"Deep nested method has {deepNested.Count} error codes");
+
 builder.Services.AddDomainException();
 builder.Services.AddProblemDetail();
+builder.Services.AddSingleton<OrderService>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.OperationFilter<SwaggerErrorCodesFilter>();
+});
 
 builder.Services
     .AddControllers()
@@ -37,6 +53,9 @@ builder.Services
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapExampleEndpoints();
 

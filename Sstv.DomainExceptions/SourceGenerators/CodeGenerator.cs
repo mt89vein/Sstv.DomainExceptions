@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Sstv.DomainExceptions.SourceGenerators.Models;
 using System.Globalization;
@@ -24,7 +24,7 @@ internal static class CodeGenerator
     )
     {
         var exceptionClassName = errorCodeEnumInfo.ExceptionConfigAttributeInfo.ClassName
-                                 ?? errorCodeEnumInfo.EnumName + "Exception";
+                                 ?? (errorCodeEnumInfo.EnumName + "Exception");
 
         GenerateEnumExtensionsClass(errorCodeEnumInfo, productionContext, context, exceptionClassName);
         GenerateExceptionClass(errorCodeEnumInfo, productionContext, context, exceptionClassName);

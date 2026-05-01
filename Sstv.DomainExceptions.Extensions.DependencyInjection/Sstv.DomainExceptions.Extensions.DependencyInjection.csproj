@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <IsPackable>true</IsPackable>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
-    <DocumentationFile>bin\$(Configuration)\$(MSBuildProjectName).xml</DocumentationFile>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+<PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
   <ItemGroup>

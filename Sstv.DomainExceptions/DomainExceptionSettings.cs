@@ -55,15 +55,7 @@ public sealed class DomainExceptionSettings
     /// </summary>
     public IErrorCodesDescriptionSource? ErrorCodesDescriptionSource
     {
-        get
-        {
-            if (_errorCodesDescriptionSource is not null)
-            {
-                return _errorCodesDescriptionSource;
-            }
-
-            return _errorCodesDescriptionSource = ErrorDescriptionSourceGetter?.Value;
-        }
+        get => _errorCodesDescriptionSource ??= ErrorDescriptionSourceGetter?.Value;
         set => _errorCodesDescriptionSource = value;
     }
 
