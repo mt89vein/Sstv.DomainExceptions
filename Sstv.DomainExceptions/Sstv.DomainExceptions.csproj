@@ -19,7 +19,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
     <ImplicitUsings>true</ImplicitUsings>
-    <NoWarn>IDE0055;IDE0011;IDE0301;IDE0305;IDE0306;IDE0032;RS1024</NoWarn>
+    <NoWarn>IDE0055;IDE0011;IDE0301;IDE0305;IDE0306;IDE0032</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

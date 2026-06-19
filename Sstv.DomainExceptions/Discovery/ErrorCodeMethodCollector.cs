@@ -11,6 +11,22 @@ namespace Sstv.DomainExceptions.Discovery;
 [Generator]
 internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 {
+    private const string IS_ENABLED = "Sstv.DomainExceptions.Discovery.ErrorCodeMethodCollectorEnabled";
+
+    private static readonly Regex _toExceptionPattern = new(@"([\w.]+)\.ToException\(\)", RegexOptions.Compiled);
+    private static readonly Regex _memberAccessPattern = new(@"(\w+)\.(\w+)", RegexOptions.Compiled);
+
+    private static readonly HashSet<string> _fluentChainMethods = new(StringComparer.Ordinal)
+    {
+        "ToException", "WithErrorId", "WithDetailedMessage", "WithAdditionalData"
+    };
+
+    private static readonly HashSet<string> _mapMethodNames = new(StringComparer.Ordinal)
+    {
+        "Map", "MapGet", "MapPost", "MapPut", "MapDelete", "MapPatch",
+        "MapGroup", "MapMethods"
+    };
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var methods = context.SyntaxProvider
@@ -56,57 +72,27 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             namespaceName = ctx.SemanticModel.Compilation.AssemblyName ?? "Global";
         }
 
-        var isEntryPoint = methodDecl.AttributeLists
-            .SelectMany(a => a.Attributes)
-            .Any(a => a.Name.ToString().Contains("CollectErrorCodes"))
-            || IsControllerAction(typeSymbol, symbol);
-
         return new MethodInfo
         {
             TypeName = typeName,
             MethodName = symbol.Name,
             Namespace = namespaceName!,
-            IsEntryPoint = isEntryPoint,
             SyntaxNode = methodDecl,
             SemanticModel = ctx.SemanticModel
         };
     }
 
-    private static readonly HashSet<string> _mapMethodNames = new(StringComparer.Ordinal)
-    {
-        "Map", "MapGet", "MapPost", "MapPut", "MapDelete", "MapPatch",
-        "MapGroup", "MapMethods"
-    };
-
-    private static bool IsControllerAction(INamedTypeSymbol? typeSymbol, IMethodSymbol methodSymbol)
-    {
-        if (typeSymbol is null)
-            return false;
-
-        var current = typeSymbol;
-        while (current is not null)
-        {
-            if (current.ToDisplayString() is "Microsoft.AspNetCore.Mvc.ControllerBase"
-                or "Microsoft.AspNetCore.Mvc.Controller")
-            {
-                var hasNonAction = methodSymbol.GetAttributes().Any(a =>
-                    a.AttributeClass?.ToDisplayString() == "Microsoft.AspNetCore.Mvc.NonActionAttribute");
-
-                return !hasNonAction;
-            }
-            current = current.BaseType;
-        }
-
-        return false;
-    }
-
     private static bool IsMinimalApiEndpoint(SyntaxNode node)
     {
         if (node is not InvocationExpressionSyntax invocation)
+        {
             return false;
+        }
 
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+        {
             return false;
+        }
 
         return _mapMethodNames.Contains(memberAccess.Name.Identifier.Text);
     }
@@ -114,23 +100,28 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     private static EndpointInfo? GetEndpointInfo(GeneratorSyntaxContext ctx)
     {
         if (ctx.Node is not InvocationExpressionSyntax invocation)
+        {
             return null;
+        }
 
         var routePattern = GetRoutePattern(invocation);
         if (routePattern is null)
+        {
             return null;
+        }
 
         var endpointName = GetEndpointName(invocation);
         var key = endpointName ?? routePattern;
 
         var body = GetEndpointBody(invocation);
         if (body is null)
+        {
             return null;
+        }
 
         return new EndpointInfo
         {
             Key = key,
-            RoutePattern = routePattern,
             Namespace = ctx.SemanticModel.Compilation.AssemblyName ?? "MinimalApi",
             Body = body,
             SemanticModel = ctx.SemanticModel
@@ -140,7 +131,9 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     private static string? GetRoutePattern(InvocationExpressionSyntax invocation)
     {
         if (invocation.ArgumentList.Arguments.Count < 2)
+        {
             return null;
+        }
 
         var firstArg = invocation.ArgumentList.Arguments[0].Expression;
         if (firstArg is LiteralExpressionSyntax literal &&
@@ -171,7 +164,9 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     {
         var args = invocation.ArgumentList.Arguments;
         if (args.Count < 2)
+        {
             return null;
+        }
 
         var handlerArg = args[args.Count - 1].Expression;
 
@@ -188,6 +183,11 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         (ImmutableArray<MethodInfo?> Methods, ImmutableArray<EndpointInfo?> Endpoints) input
     )
     {
+        if (AppContext.TryGetSwitch(IS_ENABLED, out var enabled) && !enabled)
+        {
+            return;
+        }
+
         var allMethods = input.Methods.Where(m => m != null).Cast<MethodInfo>().ToList();
         var allEndpoints = input.Endpoints.Where(e => e != null).Cast<EndpointInfo>().ToList();
 
@@ -271,7 +271,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 : firstMethod.Namespace
             : allEndpoints.FirstOrDefault()?.Namespace ?? "Sstv.DomainExceptions";
 
-        GenerateSource(context, methodErrorCodes, allMethods, allEndpoints, namespaceName);
+        GenerateSource(context, methodErrorCodes, namespaceName);
     }
 
     private static List<ErrorCodeInfo> CollectErrorCodes(SourceProductionContext context, MethodInfo methodInfo)
@@ -286,30 +286,26 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     {
         var errorCodes = new List<ErrorCodeInfo>();
 
-        foreach (var returnStmt in body.DescendantNodes().OfType<ReturnStatementSyntax>())
+        foreach (var node in body.DescendantNodes())
         {
             context.CancellationToken.ThrowIfCancellationRequested();
-            if (returnStmt.Expression != null)
-            {
-                ExtractErrorCodesFromExpression(returnStmt.Expression, errorCodes, semanticModel);
-            }
-        }
 
-        foreach (var throwStmt in body.DescendantNodes().OfType<ThrowStatementSyntax>())
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-            if (throwStmt.Expression != null)
+            switch (node)
             {
-                CollectErrorCodesFromThrowExpression(throwStmt.Expression, errorCodes, semanticModel);
-                ResolveThrowFromVariable(throwStmt.Expression, errorCodes, semanticModel);
+                case ReturnStatementSyntax { Expression: not null } returnStmt:
+                    ExtractErrorCodesFromExpression(returnStmt.Expression, errorCodes, semanticModel);
+                    break;
+                case ThrowStatementSyntax { Expression: not null } throwStmt:
+                    CollectErrorCodesFromThrowExpression(throwStmt.Expression, errorCodes, semanticModel);
+                    ResolveThrowFromVariable(throwStmt.Expression, errorCodes, semanticModel);
+                    break;
+                case ThrowExpressionSyntax throwExpr:
+                    CollectErrorCodesFromThrowExpression(throwExpr, errorCodes, semanticModel);
+                    ResolveThrowFromVariable(throwExpr, errorCodes, semanticModel);
+                    break;
+                default:
+                    break;
             }
-        }
-
-        foreach (var throwExpr in body.DescendantNodes().OfType<ThrowExpressionSyntax>())
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-            CollectErrorCodesFromThrowExpression(throwExpr, errorCodes, semanticModel);
-            ResolveThrowFromVariable(throwExpr, errorCodes, semanticModel);
         }
 
         return errorCodes;
@@ -341,11 +337,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             var fullMatch = memberAccess.ToString();
             var errorCode = memberAccess.Name.Identifier.Text;
 
-            var chainMethods = new HashSet<string>(StringComparer.Ordinal)
-            {
-                "ToException", "WithErrorId", "WithDetailedMessage", "WithAdditionalData"
-            };
-            if (chainMethods.Contains(errorCode))
+            if (_fluentChainMethods.Contains(errorCode))
             {
                 continue;
             }
@@ -383,22 +375,32 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         SemanticModel? semanticModel)
     {
         if (semanticModel is null)
+        {
             return;
+        }
 
         if (throwExpression is not IdentifierNameSyntax identifier)
+        {
             return;
+        }
 
         if (semanticModel.GetSymbolInfo(identifier).Symbol is not ILocalSymbol localSymbol)
+        {
             return;
+        }
 
         foreach (var syntaxRef in localSymbol.DeclaringSyntaxReferences)
         {
             if (syntaxRef.GetSyntax() is not VariableDeclaratorSyntax declarator)
+            {
                 continue;
+            }
 
             var initializer = declarator.Initializer?.Value;
             if (initializer is null)
+            {
                 continue;
+            }
 
             CollectErrorCodesFromThrowExpression(initializer, errorCodes, semanticModel);
             ExtractErrorCodesFromExpression(initializer, errorCodes, semanticModel);
@@ -418,14 +420,23 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             return calledKeys;
         }
 
-        foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        foreach (var invocation in body.DescendantNodes())
         {
-            if (semanticModel.GetSymbolInfo(invocation).Symbol is IMethodSymbol methodSymbol)
+            if (invocation is not InvocationExpressionSyntax invocationExpr)
+            {
+                continue;
+            }
+
+            if (semanticModel.GetSymbolInfo(invocationExpr).Symbol is IMethodSymbol methodSymbol)
             {
                 var receiverType = methodSymbol.ContainingType?.ToDisplayString();
-                if (!string.IsNullOrEmpty(receiverType) && !calledKeys.Contains(receiverType + "." + methodSymbol.Name))
+                if (!string.IsNullOrEmpty(receiverType))
                 {
-                    calledKeys.Add(receiverType + "." + methodSymbol.Name);
+                    var key = receiverType + "." + methodSymbol.Name;
+                    if (!calledKeys.Contains(key))
+                    {
+                        calledKeys.Add(key);
+                    }
                 }
             }
         }
@@ -435,14 +446,14 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
     private static void GenerateSource(SourceProductionContext context,
         Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes,
-        List<MethodInfo> allMethods,
-        List<EndpointInfo> allEndpoints,
         string namespaceName)
     {
         var keysToEmit = new HashSet<string>(methodErrorCodes.Keys.Where(k => methodErrorCodes[k].Count > 0));
 
         if (keysToEmit.Count == 0)
+        {
             return;
+        }
 
         var sb = new StringBuilder();
 
@@ -508,7 +519,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     private static ErrorCodeInfo? ExtractErrorCodeFromToException(ExpressionSyntax expression,
         SemanticModel? semanticModel)
     {
-        var match = Regex.Match(expression.ToString(), @"([\w.]+)\.ToException\(\)");
+        var match = _toExceptionPattern.Match(expression.ToString());
         if (!match.Success)
         {
             return null;
@@ -521,7 +532,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         {
             var toExceptionInvoke = expression.DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .FirstOrDefault(i => i.Expression.ToString().EndsWith(".ToException", StringComparison.InvariantCultureIgnoreCase));
+                .FirstOrDefault(i => i.Expression.ToString().EndsWith(".ToException", StringComparison.OrdinalIgnoreCase));
             if (toExceptionInvoke?.Expression is MemberAccessExpressionSyntax mae)
             {
                 var typeInfo = semanticModel.GetTypeInfo(mae.Expression);
@@ -562,13 +573,18 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     {
         var typeSymbol = semanticModel.GetTypeInfo(objectCreation).Type;
         if (typeSymbol is null)
+        {
             return false;
+        }
 
         var current = typeSymbol;
         while (current is not null)
         {
             if (current.ToDisplayString() == "Sstv.DomainExceptions.DomainException")
+            {
                 return true;
+            }
+
             current = current.BaseType;
         }
 
@@ -630,7 +646,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             }
 
             var argText = arg.Expression.ToString();
-            var match = Regex.Match(argText, @"(\w+)\.(\w+)");
+            var match = _memberAccessPattern.Match(argText);
 
             if (!match.Success)
             {
@@ -673,12 +689,11 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     }
 }
 
-internal class MethodInfo
+internal sealed class MethodInfo
 {
     public string TypeName { get; set; } = "";
     public string MethodName { get; set; } = "";
     public string Namespace { get; set; } = "";
-    public bool IsEntryPoint { get; set; }
     public MethodDeclarationSyntax SyntaxNode { get; set; } = null!;
     public SemanticModel? SemanticModel { get; set; }
 }
@@ -686,7 +701,6 @@ internal class MethodInfo
 internal sealed class EndpointInfo
 {
     public string Key { get; set; } = "";
-    public string RoutePattern { get; set; } = "";
     public string Namespace { get; set; } = "";
     public SyntaxNode Body { get; set; } = null!;
     public SemanticModel SemanticModel { get; set; } = null!;
