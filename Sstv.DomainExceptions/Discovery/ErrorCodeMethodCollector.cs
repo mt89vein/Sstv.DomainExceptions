@@ -301,6 +301,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             if (throwStmt.Expression != null)
             {
                 CollectErrorCodesFromThrowExpression(throwStmt.Expression, errorCodes, semanticModel);
+                ResolveThrowFromVariable(throwStmt.Expression, errorCodes, semanticModel);
             }
         }
 
@@ -308,6 +309,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             CollectErrorCodesFromThrowExpression(throwExpr, errorCodes, semanticModel);
+            ResolveThrowFromVariable(throwExpr, errorCodes, semanticModel);
         }
 
         return errorCodes;
@@ -372,6 +374,34 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 var codeValue = constantValue ?? errorCode;
                 errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName));
             }
+        }
+    }
+
+    private static void ResolveThrowFromVariable(
+        ExpressionSyntax throwExpression,
+        List<ErrorCodeInfo> errorCodes,
+        SemanticModel? semanticModel)
+    {
+        if (semanticModel is null)
+            return;
+
+        if (throwExpression is not IdentifierNameSyntax identifier)
+            return;
+
+        if (semanticModel.GetSymbolInfo(identifier).Symbol is not ILocalSymbol localSymbol)
+            return;
+
+        foreach (var syntaxRef in localSymbol.DeclaringSyntaxReferences)
+        {
+            if (syntaxRef.GetSyntax() is not VariableDeclaratorSyntax declarator)
+                continue;
+
+            var initializer = declarator.Initializer?.Value;
+            if (initializer is null)
+                continue;
+
+            CollectErrorCodesFromThrowExpression(initializer, errorCodes, semanticModel);
+            ExtractErrorCodesFromExpression(initializer, errorCodes, semanticModel);
         }
     }
 
@@ -562,6 +592,19 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
         foreach (var arg in objectCreation.ArgumentList.Arguments)
         {
+            if (arg.Expression is LiteralExpressionSyntax literal &&
+                literal.IsKind(SyntaxKind.StringLiteralExpression) &&
+                semanticModel != null &&
+                IsDerivedFromDomainException(objectCreation, semanticModel))
+            {
+                var stringValue = literal.Token.ValueText;
+                if (errorCodes.All(e => e.Code != stringValue))
+                {
+                    errorCodes.Add(new ErrorCodeInfo(stringValue, ErrorCodeSourceType.Constant, null, null));
+                }
+                continue;
+            }
+
             var argText = arg.Expression.ToString();
             var match = Regex.Match(argText, @"(\w+)\.(\w+)");
 
