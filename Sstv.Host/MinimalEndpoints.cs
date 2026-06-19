@@ -1,4 +1,4 @@
-﻿namespace Sstv.Host;
+namespace Sstv.Host;
 
 public static class MinimalEndpoints
 {

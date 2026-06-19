@@ -1,3 +1,1 @@
 ﻿#nullable enable
-Sstv.DomainExceptions.Discovery.CollectErrorCodesAttribute
-Sstv.DomainExceptions.Discovery.CollectErrorCodesAttribute.#ctor()
