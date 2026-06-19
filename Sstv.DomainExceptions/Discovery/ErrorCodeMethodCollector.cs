@@ -409,15 +409,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         List<EndpointInfo> allEndpoints,
         string namespaceName)
     {
-        var entryPointKeys = new HashSet<string>(
-            allMethods.Where(m => m.IsEntryPoint).Select(m => m.TypeName + "." + m.MethodName));
-
-        foreach (var ep in allEndpoints)
-            entryPointKeys.Add(ep.Key);
-
-        var keysToEmit = entryPointKeys.Count > 0
-            ? new HashSet<string>(methodErrorCodes.Keys.Where(k => entryPointKeys.Contains(k) && methodErrorCodes[k].Count > 0))
-            : new HashSet<string>(methodErrorCodes.Keys.Where(k => methodErrorCodes[k].Count > 0));
+        var keysToEmit = new HashSet<string>(methodErrorCodes.Keys.Where(k => methodErrorCodes[k].Count > 0));
 
         if (keysToEmit.Count == 0)
             return;
