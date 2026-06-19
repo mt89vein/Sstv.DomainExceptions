@@ -6,7 +6,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
-using Sstv.Host.Controllers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -20,14 +19,6 @@ builder.Services.AddOpenTelemetry()
         o.AddAspNetCoreInstrumentation();
         o.AddPrometheusExporter();
     });
-
-var x = ErrorCodeMethodCollector.ErrorCodesByMethod[
-    typeof(OrderController).FullName + "." + nameof(OrderController.CreateOrder)];
-
-var deepNested = ErrorCodeMethodCollector.ErrorCodesByMethod[
-    "Sstv.Host.Nested.Level1.Level2.DeepNestedService.ProcessDeep"];
-
-Console.WriteLine($"Deep nested method has {deepNested.Count} error codes");
 
 builder.Services.AddDomainException();
 builder.Services.AddProblemDetail();
@@ -64,5 +55,15 @@ app.MapControllers();
 app.MapPrometheusScrapingEndpoint();
 
 app.UseErrorCodesDebugView();
+
+app.MapGet("/discovery",
+    () => Results.Ok(ErrorCodeMethodCollector.ErrorCodesByMethod.ToDictionary(x => x.Key,
+        x => x.Value.Select(source =>
+            new
+            {
+                source.Code,
+                ErrorType = source.ErrorType?.ToString(),
+                SourceType = source.SourceType.ToString()
+            }))));
 
 app.Run();
