@@ -23,12 +23,6 @@ public class OrderResultController : ControllerBase
     public IActionResult TestCollected(string orderId)
     {
         _orderService.CreateOrderWithResult(orderId);
-        return Ok();
-    }
-
-    [HttpGet("non-collected")]
-    public IActionResult TestNonCollected(string orderId)
-    {
         _orderService.CreateWithDifferentNames(orderId);
         return Ok();
     }

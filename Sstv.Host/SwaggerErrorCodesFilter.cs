@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.OpenApi.Models;
 using Sstv.DomainExceptions;
-using Sstv.Host.Nested.Level1.Level2;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Sstv.Host;
 
@@ -10,16 +11,10 @@ public class SwaggerErrorCodesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        if (context.ApiDescription.ActionDescriptor is not ControllerActionDescriptor controllerAction)
-        {
-            return;
-        }
+        ArgumentNullException.ThrowIfNull(operation);
+        ArgumentNullException.ThrowIfNull(context);
 
-        var controllerType = controllerAction.ControllerTypeInfo.FullName;
-        var methodName = controllerAction.ActionName;
-        var key = controllerType + "." + methodName;
-
-        if (!ErrorCodeMethodCollector.ErrorCodesByMethod.TryGetValue(key, out var errorCodes) || errorCodes.Count == 0)
+        if (!TryGetErrorCodes(context, operation, out var errorCodes) || errorCodes.Count == 0)
         {
             return;
         }
@@ -46,7 +41,7 @@ public class SwaggerErrorCodesFilter : IOperationFilter
                     ? $"- {t.Code}"
                     : $"- {t.Code}: {t.Description}"));
 
-            var response = operation.Responses.TryGetValue(statusCode.ToString(), out var existing)
+            var response = operation.Responses.TryGetValue(statusCode.ToString(CultureInfo.InvariantCulture), out var existing)
                 ? existing
                 : new OpenApiResponse();
 
@@ -59,7 +54,33 @@ public class SwaggerErrorCodesFilter : IOperationFilter
                 response.Description = response.Description + "\n\n" + description;
             }
 
-            operation.Responses[statusCode.ToString()] = response;
+            operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)] = response;
         }
+    }
+
+    private static bool TryGetErrorCodes(
+        OperationFilterContext context,
+        OpenApiOperation operation,
+        [NotNullWhen(returnValue: true)] out HashSet<ErrorCodeSource>? errorCodes)
+    {
+        // Controller action: key = FullTypeName.ActionName
+        if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerAction)
+        {
+            var key = controllerAction.ControllerTypeInfo.FullName + "." + controllerAction.ActionName;
+            if (ErrorCodeMethodCollector.ErrorCodesByMethod.TryGetValue(key, out errorCodes))
+            {
+                return true;
+            }
+        }
+
+        // Minimal API endpoint: key = .WithName() value (operationId)
+        if (!string.IsNullOrEmpty(operation.OperationId) &&
+            ErrorCodeMethodCollector.ErrorCodesByMethod.TryGetValue(operation.OperationId, out errorCodes))
+        {
+            return true;
+        }
+
+        errorCodes = null;
+        return false;
     }
 }

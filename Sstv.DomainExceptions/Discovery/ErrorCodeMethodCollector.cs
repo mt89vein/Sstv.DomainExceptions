@@ -264,12 +264,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             return;
         }
 
-        var firstMethod = allMethods.Count > 0 ? allMethods.First() : null;
-        var namespaceName = firstMethod is not null
-            ? firstMethod.TypeName.Contains('.')
-                ? firstMethod.TypeName.Substring(0, firstMethod.TypeName.LastIndexOf('.'))
-                : firstMethod.Namespace
-            : allEndpoints.FirstOrDefault()?.Namespace ?? "Sstv.DomainExceptions";
+        var compilation = allMethods.Count > 0
+            ? allMethods[0].SemanticModel?.Compilation
+            : allEndpoints.FirstOrDefault()?.SemanticModel.Compilation;
+        var namespaceName = compilation?.AssemblyName ?? "Sstv.DomainExceptions";
 
         GenerateSource(context, methodErrorCodes, namespaceName);
     }
@@ -448,7 +446,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes,
         string namespaceName)
     {
-        var keysToEmit = new HashSet<string>(methodErrorCodes.Keys.Where(k => methodErrorCodes[k].Count > 0));
+        var keysToEmit = methodErrorCodes.Where(k => k.Value.Count > 0).Select(k => k.Key).ToList();
 
         if (keysToEmit.Count == 0)
         {
@@ -463,33 +461,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Collections.Frozen;");
+        sb.AppendLine("using Sstv.DomainExceptions;");
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
         sb.AppendLine("{");
-        sb.AppendLine("    public enum ErrorCodeSourceType");
-        sb.AppendLine("    {");
-        sb.AppendLine("        Enum,");
-        sb.AppendLine("        Constant");
-        sb.AppendLine("    }");
-        sb.AppendLine();
-        sb.AppendLine("    public sealed class ErrorCodeSource : IEquatable<ErrorCodeSource>");
-        sb.AppendLine("    {");
-        sb.AppendLine("        public string Code { get; }");
-        sb.AppendLine("        public ErrorCodeSourceType SourceType { get; }");
-        sb.AppendLine("        public Type? ErrorType { get; }");
-        sb.AppendLine(
-            "        public ErrorCodeSource(string code, ErrorCodeSourceType sourceType, Type? errorType = null)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            Code = code;");
-        sb.AppendLine("            SourceType = sourceType;");
-        sb.AppendLine("            ErrorType = errorType;");
-        sb.AppendLine("        }");
-        sb.AppendLine(
-            "        public bool Equals(ErrorCodeSource? other) => other != null && Code == other.Code && SourceType == other.SourceType;");
-        sb.AppendLine("        public override bool Equals(object? obj) => Equals(obj as ErrorCodeSource);");
-        sb.AppendLine("        public override int GetHashCode() => HashCode.Combine(Code, SourceType);");
-        sb.AppendLine("    }");
-        sb.AppendLine();
         sb.AppendLine("    public static partial class ErrorCodeMethodCollector");
         sb.AppendLine("    {");
         sb.AppendLine(
@@ -503,10 +478,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             {
                 var typeArg = c.SourceTypeName != null ? $", typeof({c.SourceTypeName})" : "";
                 return c.SourceType == ErrorCodeSourceType.Enum
-                    ? $"new ErrorCodeSource({c.FullEnumExpression ?? c.Code}.GetErrorCode(), ErrorCodeSourceType.{c.SourceType}{typeArg})"
-                    : $"new ErrorCodeSource(\"{c.Code}\", ErrorCodeSourceType.{c.SourceType}{typeArg})";
+                    ? $"new ErrorCodeSource({c.FullEnumExpression ?? c.Code}.GetErrorCode(), ErrorCodeSourceType.Enum{typeArg})"
+                    : $"new ErrorCodeSource(\"{c.Code}\", ErrorCodeSourceType.Constant{typeArg})";
             }));
-            sb.AppendLine($"                [\"{key}\"] = new HashSet<ErrorCodeSource> {{ {codes} }},");
+            sb.AppendLine($"                [\"{key}\"] = [{codes}],");
         }
 
         sb.AppendLine("            }.ToFrozenDictionary();");

@@ -45,10 +45,10 @@ public class OrderService
                 .WithDetailedMessage($"Insufficient balance. Required: {amount}, Available: {balance}");
         }
 
-        NonCollectedMethod();
+        SomeOtherMethod();
     }
 
-    public void NonCollectedMethod()
+    public void SomeOtherMethod()
     {
         throw ErrorCodes.Default.ToException();
     }

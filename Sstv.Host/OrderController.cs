@@ -29,11 +29,4 @@ public class OrderController : ControllerBase
         _orderService.ProcessOrder("ORDER-123");
         return Ok();
     }
-
-    [HttpGet("non-collected")]
-    public IActionResult TestNonCollected()
-    {
-        _orderService.NonCollectedMethod();
-        return Ok();
-    }
 }
