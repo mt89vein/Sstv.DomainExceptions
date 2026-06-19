@@ -556,6 +556,25 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         return ErrorCodeSourceType.Constant;
     }
 
+    private static bool IsDerivedFromDomainException(
+        ObjectCreationExpressionSyntax objectCreation,
+        SemanticModel semanticModel)
+    {
+        var typeSymbol = semanticModel.GetTypeInfo(objectCreation).Type;
+        if (typeSymbol is null)
+            return false;
+
+        var current = typeSymbol;
+        while (current is not null)
+        {
+            if (current.ToDisplayString() == "Sstv.DomainExceptions.DomainException")
+                return true;
+            current = current.BaseType;
+        }
+
+        return false;
+    }
+
     private static void ExtractErrorCodesFromExpression(
         ExpressionSyntax expr,
         List<ErrorCodeInfo> errorCodes,
@@ -571,6 +590,11 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 foreach (var arg in invocation.ArgumentList.Arguments)
                 {
                     ExtractErrorCodesFromExpression(arg.Expression, errorCodes, semanticModel);
+                }
+
+                if (invocation.Expression is MemberAccessExpressionSyntax ma)
+                {
+                    ExtractErrorCodesFromExpression(ma.Expression, errorCodes, semanticModel);
                 }
 
                 break;
