@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Immutable;
@@ -19,51 +20,181 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             .Where(m => m != null)
             .Collect();
 
-        context.RegisterSourceOutput(methods, GenerateErrorCodesDictionary);
+        var endpoints = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: (node, _) => IsMinimalApiEndpoint(node),
+                transform: (ctx, _) => GetEndpointInfo(ctx))
+            .Where(e => e != null)
+            .Collect();
+
+        context.RegisterSourceOutput(methods.Combine(endpoints), GenerateErrorCodesDictionary);
     }
 
     private static MethodInfo? GetMethodInfoFromSyntax(GeneratorSyntaxContext ctx)
     {
         if (ctx.Node is not MethodDeclarationSyntax methodDecl)
+        {
             return null;
-
-        var hasCollectAttribute = methodDecl.AttributeLists
-            .SelectMany(a => a.Attributes)
-            .Any(a => a.Name.ToString().Contains("CollectErrorCodes"));
-
-        if (!hasCollectAttribute)
-            return null;
+        }
 
         var symbol = ctx.SemanticModel.GetDeclaredSymbol(methodDecl);
-        if (symbol == null)
+        if (symbol is null)
+        {
             return null;
+        }
 
         var typeSymbol = symbol.ContainingType;
         if (typeSymbol == null)
+        {
             return null;
+        }
 
         var typeName = typeSymbol.ToDisplayString();
         var namespaceName = typeSymbol.ContainingNamespace?.ToDisplayString();
         if (string.IsNullOrEmpty(namespaceName))
+        {
             namespaceName = ctx.SemanticModel.Compilation.AssemblyName ?? "Global";
+        }
+
+        var isEntryPoint = methodDecl.AttributeLists
+            .SelectMany(a => a.Attributes)
+            .Any(a => a.Name.ToString().Contains("CollectErrorCodes"))
+            || IsControllerAction(typeSymbol, symbol);
 
         return new MethodInfo
         {
             TypeName = typeName,
             MethodName = symbol.Name,
-            Namespace = namespaceName ?? "",
+            Namespace = namespaceName!,
+            IsEntryPoint = isEntryPoint,
             SyntaxNode = methodDecl,
             SemanticModel = ctx.SemanticModel
         };
     }
 
+    private static readonly HashSet<string> _mapMethodNames = new(StringComparer.Ordinal)
+    {
+        "Map", "MapGet", "MapPost", "MapPut", "MapDelete", "MapPatch",
+        "MapGroup", "MapMethods"
+    };
+
+    private static bool IsControllerAction(INamedTypeSymbol? typeSymbol, IMethodSymbol methodSymbol)
+    {
+        if (typeSymbol is null)
+            return false;
+
+        var current = typeSymbol;
+        while (current is not null)
+        {
+            if (current.ToDisplayString() is "Microsoft.AspNetCore.Mvc.ControllerBase"
+                or "Microsoft.AspNetCore.Mvc.Controller")
+            {
+                var hasNonAction = methodSymbol.GetAttributes().Any(a =>
+                    a.AttributeClass?.ToDisplayString() == "Microsoft.AspNetCore.Mvc.NonActionAttribute");
+
+                return !hasNonAction;
+            }
+            current = current.BaseType;
+        }
+
+        return false;
+    }
+
+    private static bool IsMinimalApiEndpoint(SyntaxNode node)
+    {
+        if (node is not InvocationExpressionSyntax invocation)
+            return false;
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+            return false;
+
+        return _mapMethodNames.Contains(memberAccess.Name.Identifier.Text);
+    }
+
+    private static EndpointInfo? GetEndpointInfo(GeneratorSyntaxContext ctx)
+    {
+        if (ctx.Node is not InvocationExpressionSyntax invocation)
+            return null;
+
+        var routePattern = GetRoutePattern(invocation);
+        if (routePattern is null)
+            return null;
+
+        var endpointName = GetEndpointName(invocation);
+        var key = endpointName ?? routePattern;
+
+        var body = GetEndpointBody(invocation);
+        if (body is null)
+            return null;
+
+        return new EndpointInfo
+        {
+            Key = key,
+            RoutePattern = routePattern,
+            Namespace = ctx.SemanticModel.Compilation.AssemblyName ?? "MinimalApi",
+            Body = body,
+            SemanticModel = ctx.SemanticModel
+        };
+    }
+
+    private static string? GetRoutePattern(InvocationExpressionSyntax invocation)
+    {
+        if (invocation.ArgumentList.Arguments.Count < 2)
+            return null;
+
+        var firstArg = invocation.ArgumentList.Arguments[0].Expression;
+        if (firstArg is LiteralExpressionSyntax literal &&
+            literal.IsKind(SyntaxKind.StringLiteralExpression))
+        {
+            return literal.Token.ValueText;
+        }
+
+        return null;
+    }
+
+    private static string? GetEndpointName(InvocationExpressionSyntax mapInvocation)
+    {
+        if (mapInvocation.Parent is MemberAccessExpressionSyntax memberAccess &&
+            memberAccess.Parent is InvocationExpressionSyntax outerInvocation &&
+            memberAccess.Name.Identifier.Text == "WithName" &&
+            outerInvocation.ArgumentList.Arguments.Count >= 1 &&
+            outerInvocation.ArgumentList.Arguments[0].Expression is LiteralExpressionSyntax literal &&
+            literal.IsKind(SyntaxKind.StringLiteralExpression))
+        {
+            return literal.Token.ValueText;
+        }
+
+        return null;
+    }
+
+    private static SyntaxNode? GetEndpointBody(InvocationExpressionSyntax invocation)
+    {
+        var args = invocation.ArgumentList.Arguments;
+        if (args.Count < 2)
+            return null;
+
+        var handlerArg = args[args.Count - 1].Expression;
+
+        return handlerArg switch
+        {
+            LambdaExpressionSyntax lambda => (SyntaxNode?)lambda.Body,
+            AnonymousMethodExpressionSyntax anonymous => anonymous.Block,
+            _ => null
+        };
+    }
+
     private static void GenerateErrorCodesDictionary(
         SourceProductionContext context,
-        ImmutableArray<MethodInfo?> methods)
+        (ImmutableArray<MethodInfo?> Methods, ImmutableArray<EndpointInfo?> Endpoints) input
+    )
     {
-        var allMethods = methods.Where(m => m != null).Cast<MethodInfo>().ToList();
-        if (allMethods.Count == 0)
+        var allMethods = input.Methods.Where(m => m != null).Cast<MethodInfo>().ToList();
+        var allEndpoints = input.Endpoints.Where(e => e != null).Cast<EndpointInfo>().ToList();
+
+        if (allMethods.Count == 0 && allEndpoints.Count == 0)
+        {
             return;
+        }
 
         var methodErrorCodes = new Dictionary<string, List<ErrorCodeInfo>>();
         var methodCalls = new Dictionary<string, List<string>>();
@@ -72,10 +203,27 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         {
             var key = methodInfo.TypeName + "." + methodInfo.MethodName;
             if (methodErrorCodes.ContainsKey(key))
+            {
                 continue;
+            }
 
             var errorCodes = CollectErrorCodes(context, methodInfo);
             var calledKeys = CollectCalledMethods(methodInfo);
+
+            methodErrorCodes[key] = errorCodes;
+            methodCalls[key] = calledKeys;
+        }
+
+        foreach (var endpointInfo in allEndpoints)
+        {
+            var key = endpointInfo.Key;
+            if (methodErrorCodes.ContainsKey(key))
+            {
+                continue;
+            }
+
+            var errorCodes = AnalyzeErrorCodesFromNode(context, endpointInfo.Body, endpointInfo.SemanticModel);
+            var calledKeys = AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel);
 
             methodErrorCodes[key] = errorCodes;
             methodCalls[key] = calledKeys;
@@ -95,7 +243,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     {
                         foreach (var code in calledCodes)
                         {
-                            if (!methodErrorCodes[key].Any(e => e.Code == code.Code))
+                            if (methodErrorCodes[key].All(e => e.Code != code.Code))
                             {
                                 methodErrorCodes[key].Add(code);
                                 anyAdded = true;
@@ -104,114 +252,176 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     }
                 }
             }
+
             if (!anyAdded)
+            {
                 break;
+            }
         }
 
         if (methodErrorCodes.All(kvp => kvp.Value.Count == 0))
+        {
             return;
+        }
 
-        var firstMethod = allMethods.First();
-        var lastDot = firstMethod.TypeName.LastIndexOf('.');
-        var namespaceName = lastDot > 0 ? firstMethod.TypeName.Substring(0, lastDot) : firstMethod.Namespace;
+        var firstMethod = allMethods.Count > 0 ? allMethods.First() : null;
+        var namespaceName = firstMethod is not null
+            ? firstMethod.TypeName.Contains('.')
+                ? firstMethod.TypeName.Substring(0, firstMethod.TypeName.LastIndexOf('.'))
+                : firstMethod.Namespace
+            : allEndpoints.FirstOrDefault()?.Namespace ?? "Sstv.DomainExceptions";
 
-        GenerateSource(context, methodErrorCodes, namespaceName);
+        GenerateSource(context, methodErrorCodes, allMethods, allEndpoints, namespaceName);
     }
 
     private static List<ErrorCodeInfo> CollectErrorCodes(SourceProductionContext context, MethodInfo methodInfo)
     {
-        var errorCodes = new List<ErrorCodeInfo>();
-        var semanticModel = methodInfo.SemanticModel;
+        return AnalyzeErrorCodesFromNode(context, methodInfo.SyntaxNode, methodInfo.SemanticModel);
+    }
 
-        foreach (var returnStmt in methodInfo.SyntaxNode.DescendantNodes().OfType<ReturnStatementSyntax>())
+    private static List<ErrorCodeInfo> AnalyzeErrorCodesFromNode(
+        SourceProductionContext context,
+        SyntaxNode body,
+        SemanticModel? semanticModel)
+    {
+        var errorCodes = new List<ErrorCodeInfo>();
+
+        foreach (var returnStmt in body.DescendantNodes().OfType<ReturnStatementSyntax>())
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             if (returnStmt.Expression != null)
+            {
                 ExtractErrorCodesFromExpression(returnStmt.Expression, errorCodes, semanticModel);
+            }
         }
 
-        foreach (var throwStmt in methodInfo.SyntaxNode.DescendantNodes().OfType<ThrowStatementSyntax>())
+        foreach (var throwStmt in body.DescendantNodes().OfType<ThrowStatementSyntax>())
         {
             context.CancellationToken.ThrowIfCancellationRequested();
-            if (throwStmt.Expression == null)
-                continue;
-
-            var thrownText = throwStmt.Expression.ToString();
-
-            if (thrownText.Contains(".ToException()"))
+            if (throwStmt.Expression != null)
             {
-                var errorCodeInfo = ExtractErrorCodeFromToException(throwStmt.Expression, semanticModel);
-                if (errorCodeInfo != null && !errorCodes.Any(e => e.Code == errorCodeInfo.Code))
-                    errorCodes.Add(errorCodeInfo);
+                CollectErrorCodesFromThrowExpression(throwStmt.Expression, errorCodes, semanticModel);
             }
+        }
 
-            if (throwStmt.Expression is SyntaxNode thrownExpr)
-            {
-                foreach (var memberAccess in thrownExpr.DescendantNodes().OfType<MemberAccessExpressionSyntax>())
-                {
-                    if (memberAccess.Parent is InvocationExpressionSyntax)
-                        continue;
-
-                    var fullMatch = memberAccess.ToString();
-                    var errorCode = memberAccess.Name.Identifier.Text;
-
-                    var chainMethods = new HashSet<string>(StringComparer.Ordinal)
-                    {
-                        "ToException", "WithErrorId", "WithDetailedMessage", "WithAdditionalData"
-                    };
-                    if (chainMethods.Contains(errorCode))
-                        continue;
-
-                    var sourceType = DetermineSourceType(fullMatch, semanticModel);
-
-                    if (!errorCodes.Any(e => e.Code == errorCode) && char.IsUpper(errorCode.FirstOrDefault()))
-                    {
-                        var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? fullMatch : null;
-                        string? typeName = null;
-                        string? constantValue = null;
-                        if (semanticModel != null)
-                        {
-                            var symbol = semanticModel.GetSymbolInfo(memberAccess).Symbol;
-                            if (symbol is IFieldSymbol fieldSymbol)
-                            {
-                                typeName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                                if (fieldSymbol.IsConst && fieldSymbol.ConstantValue != null)
-                                    constantValue = fieldSymbol.ConstantValue.ToString();
-                            }
-                        }
-                        typeName ??= fullMatch.Contains('.') ? fullMatch.Substring(0, fullMatch.LastIndexOf('.')) : errorCode;
-                        var codeValue = constantValue ?? errorCode;
-                        errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName));
-                    }
-                }
-            }
+        foreach (var throwExpr in body.DescendantNodes().OfType<ThrowExpressionSyntax>())
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            CollectErrorCodesFromThrowExpression(throwExpr, errorCodes, semanticModel);
         }
 
         return errorCodes;
     }
 
+    private static void CollectErrorCodesFromThrowExpression(
+        ExpressionSyntax throwExpression,
+        List<ErrorCodeInfo> errorCodes,
+        SemanticModel? semanticModel)
+    {
+        var thrownText = throwExpression.ToString();
+
+        if (thrownText.Contains(".ToException()"))
+        {
+            var errorCodeInfo = ExtractErrorCodeFromToException(throwExpression, semanticModel);
+            if (errorCodeInfo != null && errorCodes.All(e => e.Code != errorCodeInfo.Code))
+            {
+                errorCodes.Add(errorCodeInfo);
+            }
+        }
+
+        foreach (var memberAccess in throwExpression.DescendantNodes().OfType<MemberAccessExpressionSyntax>())
+        {
+            if (memberAccess.Parent is InvocationExpressionSyntax)
+            {
+                continue;
+            }
+
+            var fullMatch = memberAccess.ToString();
+            var errorCode = memberAccess.Name.Identifier.Text;
+
+            var chainMethods = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "ToException", "WithErrorId", "WithDetailedMessage", "WithAdditionalData"
+            };
+            if (chainMethods.Contains(errorCode))
+            {
+                continue;
+            }
+
+            var sourceType = DetermineSourceType(fullMatch, semanticModel);
+
+            if (errorCodes.All(e => e.Code != errorCode) && char.IsUpper(errorCode.FirstOrDefault()))
+            {
+                var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? fullMatch : null;
+                string? typeName = null;
+                string? constantValue = null;
+                var symbol = semanticModel?.GetSymbolInfo(memberAccess).Symbol;
+                if (symbol is IFieldSymbol fieldSymbol)
+                {
+                    typeName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat
+                        .FullyQualifiedFormat);
+                    if (fieldSymbol is { IsConst: true, ConstantValue: not null })
+                    {
+                        constantValue = fieldSymbol.ConstantValue.ToString();
+                    }
+                }
+
+                typeName ??= fullMatch.Contains('.')
+                    ? fullMatch.Substring(0, fullMatch.LastIndexOf('.'))
+                    : errorCode;
+                var codeValue = constantValue ?? errorCode;
+                errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName));
+            }
+        }
+    }
+
     private static List<string> CollectCalledMethods(MethodInfo methodInfo)
     {
-        var calledKeys = new List<string>();
-        var semanticModel = methodInfo.SemanticModel;
-        if (semanticModel == null)
-            return calledKeys;
+        return AnalyzeCalledMethodsFromNode(methodInfo.SyntaxNode, methodInfo.SemanticModel);
+    }
 
-        foreach (var invocation in methodInfo.SyntaxNode.DescendantNodes().OfType<InvocationExpressionSyntax>())
+    private static List<string> AnalyzeCalledMethodsFromNode(SyntaxNode body, SemanticModel? semanticModel)
+    {
+        var calledKeys = new List<string>();
+        if (semanticModel == null)
+        {
+            return calledKeys;
+        }
+
+        foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
             if (semanticModel.GetSymbolInfo(invocation).Symbol is IMethodSymbol methodSymbol)
             {
                 var receiverType = methodSymbol.ContainingType?.ToDisplayString();
                 if (!string.IsNullOrEmpty(receiverType) && !calledKeys.Contains(receiverType + "." + methodSymbol.Name))
+                {
                     calledKeys.Add(receiverType + "." + methodSymbol.Name);
+                }
             }
         }
 
         return calledKeys;
     }
 
-    private static void GenerateSource(SourceProductionContext context, Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes, string namespaceName)
+    private static void GenerateSource(SourceProductionContext context,
+        Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes,
+        List<MethodInfo> allMethods,
+        List<EndpointInfo> allEndpoints,
+        string namespaceName)
     {
+        var entryPointKeys = new HashSet<string>(
+            allMethods.Where(m => m.IsEntryPoint).Select(m => m.TypeName + "." + m.MethodName));
+
+        foreach (var ep in allEndpoints)
+            entryPointKeys.Add(ep.Key);
+
+        var keysToEmit = entryPointKeys.Count > 0
+            ? new HashSet<string>(methodErrorCodes.Keys.Where(k => entryPointKeys.Contains(k) && methodErrorCodes[k].Count > 0))
+            : new HashSet<string>(methodErrorCodes.Keys.Where(k => methodErrorCodes[k].Count > 0));
+
+        if (keysToEmit.Count == 0)
+            return;
+
         var sb = new StringBuilder();
 
         sb.AppendLine("// <auto-generated />");
@@ -234,33 +444,36 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         sb.AppendLine("        public string Code { get; }");
         sb.AppendLine("        public ErrorCodeSourceType SourceType { get; }");
         sb.AppendLine("        public Type? ErrorType { get; }");
-        sb.AppendLine("        public ErrorCodeSource(string code, ErrorCodeSourceType sourceType, Type? errorType = null)");
+        sb.AppendLine(
+            "        public ErrorCodeSource(string code, ErrorCodeSourceType sourceType, Type? errorType = null)");
         sb.AppendLine("        {");
         sb.AppendLine("            Code = code;");
         sb.AppendLine("            SourceType = sourceType;");
         sb.AppendLine("            ErrorType = errorType;");
         sb.AppendLine("        }");
-        sb.AppendLine("        public bool Equals(ErrorCodeSource? other) => other != null && Code == other.Code && SourceType == other.SourceType;");
+        sb.AppendLine(
+            "        public bool Equals(ErrorCodeSource? other) => other != null && Code == other.Code && SourceType == other.SourceType;");
         sb.AppendLine("        public override bool Equals(object? obj) => Equals(obj as ErrorCodeSource);");
         sb.AppendLine("        public override int GetHashCode() => HashCode.Combine(Code, SourceType);");
         sb.AppendLine("    }");
         sb.AppendLine();
         sb.AppendLine("    public static partial class ErrorCodeMethodCollector");
         sb.AppendLine("    {");
-        sb.AppendLine("        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =");
+        sb.AppendLine(
+            "        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =");
         sb.AppendLine("            new Dictionary<string, HashSet<ErrorCodeSource>>");
         sb.AppendLine("            {");
 
-        foreach (var kvp in methodErrorCodes.Where(k => k.Value.Count > 0))
+        foreach (var key in keysToEmit)
         {
-            var codes = string.Join(", ", kvp.Value.Select(c =>
+            var codes = string.Join(", ", methodErrorCodes[key].Select(c =>
             {
                 var typeArg = c.SourceTypeName != null ? $", typeof({c.SourceTypeName})" : "";
                 return c.SourceType == ErrorCodeSourceType.Enum
                     ? $"new ErrorCodeSource({c.FullEnumExpression ?? c.Code}.GetErrorCode(), ErrorCodeSourceType.{c.SourceType}{typeArg})"
                     : $"new ErrorCodeSource(\"{c.Code}\", ErrorCodeSourceType.{c.SourceType}{typeArg})";
             }));
-            sb.AppendLine($"                [\"{kvp.Key}\"] = new HashSet<ErrorCodeSource> {{ {codes} }},");
+            sb.AppendLine($"                [\"{key}\"] = new HashSet<ErrorCodeSource> {{ {codes} }},");
         }
 
         sb.AppendLine("            }.ToFrozenDictionary();");
@@ -270,11 +483,14 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         context.AddSource("ErrorCodeMethodCollector.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 
-    private static ErrorCodeInfo? ExtractErrorCodeFromToException(ExpressionSyntax expression, SemanticModel? semanticModel)
+    private static ErrorCodeInfo? ExtractErrorCodeFromToException(ExpressionSyntax expression,
+        SemanticModel? semanticModel)
     {
         var match = Regex.Match(expression.ToString(), @"([\w.]+)\.ToException\(\)");
         if (!match.Success)
+        {
             return null;
+        }
 
         var fullExpression = match.Groups[1].Value;
         var memberName = fullExpression.Split('.').Last();
@@ -283,21 +499,25 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         {
             var toExceptionInvoke = expression.DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .FirstOrDefault(i => i.Expression.ToString().EndsWith(".ToException"));
-            if (toExceptionInvoke?.Expression is MemberAccessExpressionSyntax mae && mae.Expression != null)
+                .FirstOrDefault(i => i.Expression.ToString().EndsWith(".ToException", StringComparison.InvariantCultureIgnoreCase));
+            if (toExceptionInvoke?.Expression is MemberAccessExpressionSyntax mae)
             {
                 var typeInfo = semanticModel.GetTypeInfo(mae.Expression);
                 typeName = typeInfo.Type?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             }
         }
+
         typeName ??= fullExpression.Contains('.') ? fullExpression.Substring(0, fullExpression.LastIndexOf('.')) : null;
+
         return new ErrorCodeInfo(memberName, ErrorCodeSourceType.Enum, fullExpression, typeName);
     }
 
     private static ErrorCodeSourceType DetermineSourceType(string fullExpression, SemanticModel? semanticModel)
     {
         if (!fullExpression.Contains('.') || semanticModel == null)
+        {
             return ErrorCodeSourceType.Constant;
+        }
 
         var parts = fullExpression.Split('.');
         var memberName = parts.Last();
@@ -305,20 +525,20 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
         var typeSymbol = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
         if (typeSymbol == null)
+        {
             return EnumFinder.FindEnumWithErrorDescriptionAttribute(semanticModel.Compilation, memberName).HasValue
                 ? ErrorCodeSourceType.Enum
                 : ErrorCodeSourceType.Constant;
-
-        if (typeSymbol.TypeKind == TypeKind.Enum)
-            return ErrorCodeSourceType.Constant;
-
-        if (typeSymbol.GetMembers().Any(m => m.Name == memberName && m is IFieldSymbol f && f.IsConst))
-            return ErrorCodeSourceType.Constant;
+        }
 
         return ErrorCodeSourceType.Constant;
     }
 
-    private static void ExtractErrorCodesFromExpression(ExpressionSyntax expr, List<ErrorCodeInfo> errorCodes, SemanticModel? semanticModel)
+    private static void ExtractErrorCodesFromExpression(
+        ExpressionSyntax expr,
+        List<ErrorCodeInfo> errorCodes,
+        SemanticModel? semanticModel
+    )
     {
         switch (expr)
         {
@@ -327,51 +547,67 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 break;
             case InvocationExpressionSyntax invocation:
                 foreach (var arg in invocation.ArgumentList.Arguments)
+                {
                     ExtractErrorCodesFromExpression(arg.Expression, errorCodes, semanticModel);
+                }
+
                 break;
             default:
                 break;
         }
     }
 
-    private static void ExtractErrorCodesFromObjectCreation(ObjectCreationExpressionSyntax objectCreation, List<ErrorCodeInfo> errorCodes, SemanticModel? semanticModel)
+    private static void ExtractErrorCodesFromObjectCreation(
+        ObjectCreationExpressionSyntax objectCreation,
+        List<ErrorCodeInfo> errorCodes,
+        SemanticModel? semanticModel
+    )
     {
         if (objectCreation.ArgumentList == null)
+        {
             return;
+        }
 
         foreach (var arg in objectCreation.ArgumentList.Arguments)
         {
             var argText = arg.Expression.ToString();
             var match = Regex.Match(argText, @"(\w+)\.(\w+)");
 
-            if (match.Success)
+            if (!match.Success)
             {
-                var potentialCode = match.Groups[2].Value;
-                var sourceType = DetermineSourceType(argText, semanticModel);
+                continue;
+            }
 
-                if (char.IsUpper(potentialCode.FirstOrDefault()) && !errorCodes.Any(e => e.Code == potentialCode))
+            var potentialCode = match.Groups[2].Value;
+            var sourceType = DetermineSourceType(argText, semanticModel);
+
+            if (char.IsUpper(potentialCode.FirstOrDefault()) && errorCodes.All(e => e.Code != potentialCode))
+            {
+                var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? argText : null;
+                string? typeName = null;
+                string? constantValue = null;
+                if (semanticModel != null && arg.Expression is MemberAccessExpressionSyntax maes)
                 {
-                    var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? argText : null;
-                    string? typeName = null;
-                    string? constantValue = null;
-                    if (semanticModel != null && arg.Expression is MemberAccessExpressionSyntax maes)
+                    var symbol = semanticModel.GetSymbolInfo(maes).Symbol;
+                    if (symbol is IFieldSymbol fieldSymbol)
                     {
-                        var symbol = semanticModel.GetSymbolInfo(maes).Symbol;
-                        if (symbol is IFieldSymbol fieldSymbol)
+                        typeName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        if (fieldSymbol is { IsConst: true, ConstantValue: not null })
                         {
-                            typeName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                            if (fieldSymbol.IsConst && fieldSymbol.ConstantValue != null)
-                                constantValue = fieldSymbol.ConstantValue.ToString();
+                            constantValue = fieldSymbol.ConstantValue.ToString();
                         }
                     }
-                    typeName ??= argText.Contains('.') ? argText.Substring(0, argText.LastIndexOf('.')) : null;
-                    var codeValue = constantValue ?? potentialCode;
-                    errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName));
                 }
-                else if (char.IsUpper(argText.FirstOrDefault()) && !argText.Contains('.'))
+
+                typeName ??= argText.Contains('.') ? argText.Substring(0, argText.LastIndexOf('.')) : null;
+                var codeValue = constantValue ?? potentialCode;
+                errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName));
+            }
+            else if (char.IsUpper(argText.FirstOrDefault()) && !argText.Contains('.'))
+            {
+                if (errorCodes.All(e => e.Code != argText))
                 {
-                    if (!errorCodes.Any(e => e.Code == argText))
-                        errorCodes.Add(new ErrorCodeInfo(argText, ErrorCodeSourceType.Constant, null, argText));
+                    errorCodes.Add(new ErrorCodeInfo(argText, ErrorCodeSourceType.Constant, null, argText));
                 }
             }
         }
@@ -383,11 +619,25 @@ internal class MethodInfo
     public string TypeName { get; set; } = "";
     public string MethodName { get; set; } = "";
     public string Namespace { get; set; } = "";
+    public bool IsEntryPoint { get; set; }
     public MethodDeclarationSyntax SyntaxNode { get; set; } = null!;
     public SemanticModel? SemanticModel { get; set; }
 }
 
-internal enum ErrorCodeSourceType { Enum, Constant }
+internal sealed class EndpointInfo
+{
+    public string Key { get; set; } = "";
+    public string RoutePattern { get; set; } = "";
+    public string Namespace { get; set; } = "";
+    public SyntaxNode Body { get; set; } = null!;
+    public SemanticModel SemanticModel { get; set; } = null!;
+}
+
+internal enum ErrorCodeSourceType
+{
+    Enum,
+    Constant
+}
 
 internal sealed class ErrorCodeInfo
 {
@@ -395,7 +645,9 @@ internal sealed class ErrorCodeInfo
     public ErrorCodeSourceType SourceType { get; }
     public string? FullEnumExpression { get; }
     public string? SourceTypeName { get; }
-    public ErrorCodeInfo(string code, ErrorCodeSourceType sourceType, string? fullEnumExpression = null, string? sourceTypeName = null)
+
+    public ErrorCodeInfo(string code, ErrorCodeSourceType sourceType, string? fullEnumExpression = null,
+        string? sourceTypeName = null)
     {
         Code = code;
         SourceType = sourceType;
@@ -406,17 +658,19 @@ internal sealed class ErrorCodeInfo
 
 internal static class EnumFinder
 {
-    public static (string EnumTypeName, string FieldName)? FindEnumWithErrorDescriptionAttribute(Compilation compilation, string fieldName)
+    public static (string EnumTypeName, string FieldName)? FindEnumWithErrorDescriptionAttribute(
+        Compilation compilation, string fieldName)
     {
         foreach (var symbol in compilation.GetSymbolsWithName(fieldName, SymbolFilter.Member))
         {
-            if (symbol.ContainingType is INamedTypeSymbol enumType &&
-                enumType.TypeKind == TypeKind.Enum &&
-                enumType.GetAttributes().Any(a => (a.AttributeClass?.Name ?? "") is "ErrorDescriptionAttribute" or "ErrorDescription"))
+            if (symbol.ContainingType is { TypeKind: TypeKind.Enum } enumType &&
+                enumType.GetAttributes().Any(a =>
+                    (a.AttributeClass?.Name ?? "") is nameof(ErrorDescriptionAttribute) or "ErrorDescription"))
             {
                 return (enumType.Name, fieldName);
             }
         }
+
         return null;
     }
 }

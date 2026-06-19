@@ -1,10 +1,7 @@
-using Sstv.DomainExceptions.Discovery;
-
 namespace Sstv.Host;
 
 public class OrderService
 {
-    [CollectErrorCodes]
     public void ProcessOrder(string orderId)
     {
         ValidateOrder(orderId);
@@ -12,7 +9,6 @@ public class OrderService
         ProcessPayment(orderId);
     }
 
-    [CollectErrorCodes]
     public void ValidateOrder(string orderId)
     {
         if (string.IsNullOrEmpty(orderId))
@@ -28,7 +24,6 @@ public class OrderService
         }
     }
 
-    [CollectErrorCodes]
     public void CheckInventory(string orderId)
     {
         var hasInventory = false;
@@ -39,7 +34,6 @@ public class OrderService
         }
     }
 
-    [CollectErrorCodes]
     public void ProcessPayment(string orderId)
     {
         var balance = 100m;

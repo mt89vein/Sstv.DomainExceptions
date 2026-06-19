@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Sstv.DomainExceptions.Discovery;
 using Sstv.Host.Nested.Level1.Level2;
 
 namespace Sstv.Host.Controllers;
 
+[Route("v1/orders")]
 public class OrderController : ControllerBase
 {
     private readonly OrderService _orderService;
@@ -15,8 +15,7 @@ public class OrderController : ControllerBase
         _deepNestedService = deepNestedService;
     }
 
-    [HttpPost("orders/{orderId}")]
-    [CollectErrorCodes]
+    [HttpPost("{orderId}")]
     public IActionResult CreateOrder(string orderId)
     {
         _orderService.ProcessOrder(orderId);
@@ -24,16 +23,14 @@ public class OrderController : ControllerBase
         return Ok(new { OrderId = orderId, Status = "Processed" });
     }
 
-    [HttpGet("orders/test")]
-    [CollectErrorCodes]
+    [HttpGet("test")]
     public IActionResult TestCollected()
     {
         _orderService.ProcessOrder("ORDER-123");
         return Ok();
     }
 
-    [HttpGet("orders/non-collected")]
-    [CollectErrorCodes]
+    [HttpGet("non-collected")]
     public IActionResult TestNonCollected()
     {
         _orderService.NonCollectedMethod();

@@ -1,5 +1,3 @@
-using Sstv.DomainExceptions.Discovery;
-
 namespace Sstv.Host.Nested.Level1.Level2;
 
 public class DeepNestedService
@@ -11,14 +9,12 @@ public class DeepNestedService
         _childService = childService;
     }
 
-    [CollectErrorCodes]
     public void ProcessDeep(string input)
     {
         _childService.ValidateDeep(input);
         _childService.ProcessChild(input);
     }
 
-    [CollectErrorCodes]
     public void DirectThrow(string input)
     {
         if (string.IsNullOrEmpty(input))
@@ -39,7 +35,6 @@ public class DeepChildService
         _grandChild = grandChild;
     }
 
-    [CollectErrorCodes]
     public void ValidateDeep(string input)
     {
         if (input.Length < 3)
@@ -50,7 +45,6 @@ public class DeepChildService
         _grandChild.CheckDeep(input);
     }
 
-    [CollectErrorCodes]
     public void ProcessChild(string input)
     {
         throw new MyException(DomainErrorCodes.SOMETHING_BAD_HAPPEN);
@@ -59,7 +53,6 @@ public class DeepChildService
 
 public class DeepGrandChildService
 {
-    [CollectErrorCodes]
     public void CheckDeep(string input)
     {
         if (input.Contains("error"))

@@ -7,6 +7,7 @@ using OpenTelemetry.Resources;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
 using Sstv.Host.Controllers;
+using Sstv.Host.Nested.Level1.Level2;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
