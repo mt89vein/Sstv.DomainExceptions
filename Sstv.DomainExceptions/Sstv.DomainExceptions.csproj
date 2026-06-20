@@ -23,15 +23,14 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Sstv.DomainExceptions.Extensions.DependencyInjection" />
-    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0">
+    <PackageReference Include="MinVer" Version="7.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.25">
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="2.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -42,6 +41,7 @@
   <ItemGroup>
     <None Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="lib/netstandard2.0" Visible="true" Pack="true" />
     <None Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers/dotnet/cs" Visible="false" Pack="true" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

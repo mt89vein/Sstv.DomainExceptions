@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Sstv.Domain.Sample;
 using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.DebugViewer;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
@@ -44,7 +45,7 @@ public static class ServiceCollectionExtensions
             b.WithErrorCodesDescriptionFromConfiguration();
             b.UseDomainExceptionHandler();
 
-            b.ConfigureSettings = (IServiceProvider sp, DomainExceptionSettings settings) =>
+            b.ConfigureSettings = (sp, settings) =>
             {
                 settings.GenerateExceptionIdAutomatically = true;     // default value
                 settings.CollectErrorCodesMetricAutomatically = true; // default value
@@ -135,7 +136,7 @@ public static class ServiceCollectionExtensions
     {
         return builder.ConfigureApiBehaviorOptions(o =>
         {
-            o.InvalidModelStateResponseFactory = static (ActionContext context) =>
+            o.InvalidModelStateResponseFactory = static context =>
             {
                 var errorDescription = ErrorCodes.InvalidData.GetDescription();
                 ErrorCodesMeter.Measure(errorDescription, null);

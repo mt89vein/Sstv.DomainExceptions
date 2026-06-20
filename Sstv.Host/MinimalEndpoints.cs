@@ -1,4 +1,6 @@
-﻿namespace Sstv.Host;
+using Sstv.Domain.Sample;
+
+namespace Sstv.Host;
 
 public static class MinimalEndpoints
 {
@@ -11,14 +13,14 @@ public static class MinimalEndpoints
                 .WithDetailedMessage("DetailedError");
 
             throw x;
-        });
+        }).WithName("minimal-api-example-1-custom-operation-id");
 
         app.MapGet("/minimal-api-example-2", () =>
         {
             // using enums
             throw ErrorCodes.NotEnoughMoney.ToException()
                 .WithDetailedMessage("You want 500, but your account balance is 300.");
-        });
+        }).WithName("minimal-api-example-2");
 
         app.MapGet("/minimal-api-example-3", () =>
         {
@@ -27,7 +29,7 @@ public static class MinimalEndpoints
                 .WithDetailedMessage("DetailedError");
 
             throw x;
-        });
+        }).WithName("minimal-api-example-3");
 
         // exception handled in problem details middleware
         app.MapGet("/minimal-api-example-4", () =>

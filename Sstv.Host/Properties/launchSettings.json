@@ -19,9 +19,13 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Generators": {
+    "GeneratorsHost": {
       "commandName": "DebugRoslynComponent",
       "targetProject": "../Sstv.Host/Sstv.Host.csproj"
+    },
+    "GeneratorsDomainSample": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "../Sstv.Domain.Sample/Sstv.Domain.Sample.csproj"
     }
   }
 }

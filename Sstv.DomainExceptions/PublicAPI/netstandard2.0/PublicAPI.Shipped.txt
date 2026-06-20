@@ -105,3 +105,16 @@ Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.AdditionalDataPropertyFil
 Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.Value.get -> object?
 static Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.operator !=(Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs left, Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs right) -> bool
 static Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs.operator ==(Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs left, Sstv.DomainExceptions.AdditionalDataPropertyFilterArgs right) -> bool
+override Sstv.DomainExceptions.ErrorCodeSource.Equals(object? obj) -> bool
+override Sstv.DomainExceptions.ErrorCodeSource.GetHashCode() -> int
+Sstv.DomainExceptions.ErrorCodeSource
+Sstv.DomainExceptions.ErrorCodeSource.Code.get -> string!
+Sstv.DomainExceptions.ErrorCodeSource.Equals(Sstv.DomainExceptions.ErrorCodeSource? other) -> bool
+Sstv.DomainExceptions.ErrorCodeSource.ErrorCodeSource(string! code, Sstv.DomainExceptions.ErrorCodeSourceType sourceType, System.Type? errorType = null) -> void
+Sstv.DomainExceptions.ErrorCodeSource.ErrorType.get -> System.Type?
+Sstv.DomainExceptions.ErrorCodeSource.SourceType.get -> Sstv.DomainExceptions.ErrorCodeSourceType
+Sstv.DomainExceptions.ErrorCodeSourceType
+Sstv.DomainExceptions.ErrorCodeSourceType.Constant = 1 -> Sstv.DomainExceptions.ErrorCodeSourceType
+Sstv.DomainExceptions.ErrorCodeSourceType.Enum = 0 -> Sstv.DomainExceptions.ErrorCodeSourceType
+Sstv.DomainExceptions.CollectErrorCodesAttribute
+Sstv.DomainExceptions.CollectErrorCodesAttribute.CollectErrorCodesAttribute() -> void

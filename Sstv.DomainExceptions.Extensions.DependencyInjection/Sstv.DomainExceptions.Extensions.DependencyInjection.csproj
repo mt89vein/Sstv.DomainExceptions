@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <IsPackable>true</IsPackable>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
-    <DocumentationFile>bin\$(Configuration)\$(MSBuildProjectName).xml</DocumentationFile>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+<PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,14 +20,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0">
+    <PackageReference Include="MinVer" Version="7.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.25">
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="2.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="OpenTelemetry.Api" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Api" Version="1.16.0" />
   </ItemGroup>
 </Project>

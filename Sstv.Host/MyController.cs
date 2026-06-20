@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Sstv.Domain.Sample;
 
 namespace Sstv.Host;
 
 public class MyController : ControllerBase
 {
-    // BadRequest autocovertion enabled into problem details format
     [HttpGet("controller-example-1")]
     public IActionResult Test()
     {
@@ -38,7 +38,6 @@ public class MyController : ControllerBase
     [HttpGet("controller-example-6")]
     public IActionResult WithErrorCode()
     {
-        // constants as error code
         throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)
             .WithErrorId()
             .WithDetailedMessage("DetailedError")
@@ -48,7 +47,6 @@ public class MyController : ControllerBase
     [HttpGet("controller-example-7")]
     public IActionResult WithGenericErrorCode()
     {
-        // enums as error code
         throw ErrorCodes.SomethingBadHappen.ToException()
             .WithErrorId()
             .WithDetailedMessage("DetailedError")

@@ -194,3 +194,58 @@ Pros:
 Cons:
 * Cant see all the things about on the same file (except output of ErrorDebugView), cause we need additional store for error description, help link etc.
 * You can forgot to add error description. Need additional checks or validators.
+
+### Error code discovery (source generator)
+
+Starting from version 4.0.0, the library includes a source generator that automatically discovers all error codes
+used across your application's call stack. At build time, it produces a `FrozenDictionary<string, HashSet<ErrorCodeSource>>`
+mapping each method to the error codes it can produce (via throw, `.ToException()`, `DomainException` constructor calls,
+or propagation through the call graph).
+
+#### How it works
+
+The generator analyzes all method bodies and tracks error codes by:
+
+- **Direct throws**: `throw ErrorCodes.InvalidData.ToException()`
+- **Constructor arguments**: `throw new MyException(ErrorCodes.Default.GetErrorCode())`
+- **String literals**: `throw new MyException("SSTV.10004")` (if `MyException` derives from `DomainException`)
+- **Variable tracing**: follows `throw ex` back to the variable declaration and analyzes its initializer
+- **Call graph propagation**: traces error codes across method calls (up to 10 levels deep)
+- **Fluent API**: `new MyException(code).WithDetailedMessage(...).WithAdditionalData(...)`
+
+#### Minimal API support
+
+The generator detects endpoints registered via `.MapGet()`, `.MapPost()`, `.MapPut()`, `.MapDelete()`, `.MapPatch()`,
+and `.MapGroup()`. Endpoint keys use the `.WithName()` value if provided, otherwise the route pattern.
+
+#### Generated output
+
+```csharp
+using ErrorCodes = global::Sstv.Host.ErrorCodes;
+using DomainErrorCodes = global::Sstv.Host.DomainErrorCodes;
+
+namespace Sstv.Host
+{
+    public static partial class ErrorCodeMethodCollector
+    {
+        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =
+            new Dictionary<string, HashSet<ErrorCodeSource>>
+            {
+                ["Sstv.Host.Controllers.OrderController.CreateOrder"] = [
+                    new ErrorCodeSource(ErrorCodes.InvalidData.GetErrorCode(), ErrorCodeSourceType.Enum, typeof(ErrorCodes)),
+                    new ErrorCodeSource("SSTV.10005", ErrorCodeSourceType.Constant, typeof(DomainErrorCodes)),
+                ],
+                ["minimal-api-example-1"] = [
+                    new ErrorCodeSource("SSTV.10004", ErrorCodeSourceType.Constant, typeof(DomainErrorCodes)),
+                ],
+            }.ToFrozenDictionary();
+    }
+}
+```
+
+The namespace is derived from the assembly name. You can consume this dictionary to enrich logs, Swagger docs,
+or create custom error code monitoring.
+
+#### Enabling the generator
+
+This generator is useful only when its output is consumed. So you need to manually activate it by adding attribute: [assembly: CollectErrorCodes]

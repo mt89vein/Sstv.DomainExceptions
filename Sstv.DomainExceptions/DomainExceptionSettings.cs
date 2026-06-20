@@ -6,11 +6,6 @@ namespace Sstv.DomainExceptions;
 public sealed class DomainExceptionSettings
 {
     /// <summary>
-    /// Backing field of <see cref="ErrorCodesDescriptionSource"/>.
-    /// </summary>
-    private IErrorCodesDescriptionSource? _errorCodesDescriptionSource;
-
-    /// <summary>
     /// Lazy initializer of singleton.
     /// </summary>
     private static readonly Lazy<DomainExceptionSettings> _lazy = new(() => new DomainExceptionSettings());
@@ -55,16 +50,8 @@ public sealed class DomainExceptionSettings
     /// </summary>
     public IErrorCodesDescriptionSource? ErrorCodesDescriptionSource
     {
-        get
-        {
-            if (_errorCodesDescriptionSource is not null)
-            {
-                return _errorCodesDescriptionSource;
-            }
-
-            return _errorCodesDescriptionSource = ErrorDescriptionSourceGetter?.Value;
-        }
-        set => _errorCodesDescriptionSource = value;
+        get => field ??= ErrorDescriptionSourceGetter?.Value;
+        set;
     }
 
     /// <summary>
