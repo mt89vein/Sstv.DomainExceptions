@@ -116,3 +116,5 @@ Sstv.DomainExceptions.ErrorCodeSource.SourceType.get -> Sstv.DomainExceptions.Er
 Sstv.DomainExceptions.ErrorCodeSourceType
 Sstv.DomainExceptions.ErrorCodeSourceType.Constant = 1 -> Sstv.DomainExceptions.ErrorCodeSourceType
 Sstv.DomainExceptions.ErrorCodeSourceType.Enum = 0 -> Sstv.DomainExceptions.ErrorCodeSourceType
+Sstv.DomainExceptions.CollectErrorCodesAttribute
+Sstv.DomainExceptions.CollectErrorCodesAttribute.CollectErrorCodesAttribute() -> void.
