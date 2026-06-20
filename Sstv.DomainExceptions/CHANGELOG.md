@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-06-21
+
+- source gen class refactored
+- faster BFS algo used instead of loops
+- added readme with supported features
+- interface method calls also supported if we can find implementations compilation (merged all error codes)
+- incremental source gen with cache - method changes do not recalculate all the methods (only changed)
+
+
+## [4.0.0] - 2026-06-20
+
+### Added
+- adds new opt-in source generator to collect all error codes from call stack of the methods, which can be used to add possible error codes to swagger
+
+### Changed
+
+- Update to .NET 10
+
+
 ## [3.1.0] - 2025-04-02
 
 ### Added

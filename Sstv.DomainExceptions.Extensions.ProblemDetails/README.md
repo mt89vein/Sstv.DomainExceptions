@@ -12,19 +12,19 @@ This library brings to Sstv.DomainExceptions additional capabilities to create r
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.ProblemDetails -Version 3.1.0
+Install-Package Sstv.DomainExceptions.Extensions.ProblemDetails
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.ProblemDetails --version 3.1.0
+dotnet add package Sstv.DomainExceptions.Extensions.ProblemDetails
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.ProblemDetails" Version="3.1.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.ProblemDetails" />
 ```
 
 ## How to use?

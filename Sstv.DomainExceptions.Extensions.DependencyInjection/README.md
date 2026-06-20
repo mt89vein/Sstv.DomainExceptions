@@ -12,19 +12,19 @@ This library brings to Sstv.DomainExceptions additional capabilities to register
 You can install using Nuget Package Manager:
 
 ```bash
-Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection -Version 3.0.0
+Install-Package Sstv.DomainExceptions.Extensions.DependencyInjection
 ```
 
 via the .NET CLI:
 
 ```bash
-dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection --version 3.0.0
+dotnet add package Sstv.DomainExceptions.Extensions.DependencyInjection
 ```
 
 or you can add package reference manually:
 
 ```xml
-<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" Version="3.0.0" />
+<PackageReference Include="Sstv.DomainExceptions.Extensions.DependencyInjection" />
 ```
 
 ## How to use?
