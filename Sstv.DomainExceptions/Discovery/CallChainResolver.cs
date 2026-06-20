@@ -110,44 +110,6 @@ internal partial class ErrorCodeMethodCollector
         }
     }
 
-    private static List<string> CollectCalledMethods(
-        MethodInfo methodInfo,
-        InterfaceCache? interfaceCache = null)
-    {
-        if (methodInfo.SyntaxNode is null || methodInfo.SemanticModel is null)
-        {
-            return [];
-        }
-
-        return AnalyzeCalledMethodsFromNode(methodInfo.SyntaxNode, methodInfo.SemanticModel, interfaceCache);
-    }
-
-    private static List<string> AnalyzeCalledMethodsFromNode(
-        SyntaxNode body, SemanticModel? semanticModel,
-        InterfaceCache? interfaceCache = null)
-    {
-        var calledKeys = new List<string>();
-        if (semanticModel is null)
-        {
-            return calledKeys;
-        }
-
-        var seen = new HashSet<string>();
-        try
-        {
-            foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
-            {
-                CollectCallFromInvocation(invocation, calledKeys, seen, semanticModel, interfaceCache);
-            }
-        }
-        catch
-        {
-            // partial results are acceptable
-        }
-
-        return calledKeys;
-    }
-
     private static void CollectCallFromInvocation(
         InvocationExpressionSyntax invocation,
         List<string> calledKeys,

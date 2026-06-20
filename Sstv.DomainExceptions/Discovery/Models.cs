@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Immutable;
 
 namespace Sstv.DomainExceptions.Discovery;
 
@@ -26,24 +27,17 @@ internal enum ErrorCodeSourceType
     Constant
 }
 
-internal sealed class ErrorCodeInfo
-{
-    public string Code { get; }
-    public ErrorCodeSourceType SourceType { get; }
-    public string? FullEnumExpression { get; }
-    public string? SourceTypeName { get; }
-    public string? ExtensionClassName { get; }
+internal sealed record ErrorCodeInfo(
+    string Code,
+    ErrorCodeSourceType SourceType,
+    string? FullEnumExpression = null,
+    string? SourceTypeName = null,
+    string? ExtensionClassName = null);
 
-    public ErrorCodeInfo(string code, ErrorCodeSourceType sourceType, string? fullEnumExpression = null,
-        string? sourceTypeName = null, string? extensionClassName = null)
-    {
-        Code = code;
-        SourceType = sourceType;
-        FullEnumExpression = fullEnumExpression;
-        SourceTypeName = sourceTypeName;
-        ExtensionClassName = extensionClassName;
-    }
-}
+internal sealed record MethodAnalysis(
+    string Key,
+    ImmutableArray<ErrorCodeInfo> ErrorCodes,
+    ImmutableArray<string> CalledKeys);
 
 internal sealed class GeneratorSettings
 {

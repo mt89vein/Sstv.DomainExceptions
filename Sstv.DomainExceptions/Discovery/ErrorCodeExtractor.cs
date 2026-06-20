@@ -15,22 +15,15 @@ internal partial class ErrorCodeMethodCollector
         "ToException", "WithErrorId", "WithDetailedMessage", "WithAdditionalData"
     };
 
-    private static List<ErrorCodeInfo> CollectErrorCodes(SourceProductionContext context, MethodInfo methodInfo)
-    {
-        if (methodInfo.SyntaxNode is null || methodInfo.SemanticModel is null)
-        {
-            return [];
-        }
-
-        return AnalyzeErrorCodesFromNode(context, methodInfo.SyntaxNode, methodInfo.SemanticModel);
-    }
-
-    private static List<ErrorCodeInfo> AnalyzeErrorCodesFromNode(
+    private static (List<ErrorCodeInfo> ErrorCodes, List<string> CalledKeys) CollectCodeAnalysis(
         SourceProductionContext context,
         SyntaxNode body,
-        SemanticModel? semanticModel)
+        SemanticModel? semanticModel,
+        InterfaceCache? interfaceCache = null)
     {
         var errorCodes = new List<ErrorCodeInfo>();
+        var calledKeys = new List<string>();
+        var seen = new HashSet<string>();
 
         try
         {
@@ -51,6 +44,13 @@ internal partial class ErrorCodeMethodCollector
                         CollectErrorCodesFromThrowExpression(throwExpr, errorCodes, semanticModel);
                         ResolveThrowFromVariable(throwExpr, errorCodes, semanticModel);
                         break;
+                    case InvocationExpressionSyntax invocation:
+                        if (semanticModel is not null)
+                        {
+                            CollectCallFromInvocation(invocation, calledKeys, seen, semanticModel, interfaceCache);
+                        }
+
+                        break;
                     default:
                         break;
                 }
@@ -61,7 +61,7 @@ internal partial class ErrorCodeMethodCollector
             // partial results are acceptable
         }
 
-        return errorCodes;
+        return (errorCodes, calledKeys);
     }
 
     private static void CollectErrorCodesFromThrowExpression(

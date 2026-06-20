@@ -97,8 +97,8 @@ internal partial class ErrorCodeMethodCollector
         sb.AppendLine($"    public static partial class {className ?? "ErrorCodeMethodCollector"}");
         sb.AppendLine("    {");
         sb.AppendLine(
-            "        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =");
-        sb.AppendLine("            new Dictionary<string, HashSet<ErrorCodeSource>>");
+            "        public static readonly FrozenDictionary<string, ErrorCodeSource[]> ErrorCodesByMethod =");
+        sb.AppendLine("            new Dictionary<string, ErrorCodeSource[]>");
         sb.AppendLine("            {");
 
         foreach (var key in keysToEmit)

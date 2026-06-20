@@ -61,7 +61,21 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 {
                     try
                     {
-                        return GetMethodInfoFromSyntax(ctx);
+                        var methodInfo = GetMethodInfoFromSyntax(ctx);
+                        if (methodInfo is null)
+                        {
+                            return null;
+                        }
+
+                        var compilation = ctx.SemanticModel.Compilation;
+                        var cache = new InterfaceCache(compilation);
+                        var (codes, calls) = CollectCodeAnalysis(default, methodInfo.SyntaxNode!,
+                            methodInfo.SemanticModel, cache);
+
+                        return new MethodAnalysis(
+                            methodInfo.TypeName + "." + methodInfo.MethodName,
+                            [.. codes],
+                            [.. calls]);
                     }
                     catch
                     {
@@ -275,9 +289,9 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
     private static void GenerateErrorCodesDictionary(
         SourceProductionContext context,
         GeneratorSettings settings,
-        (ImmutableArray<MethodInfo?> Methods, ImmutableArray<EndpointInfo?> Endpoints) input)
+        (ImmutableArray<MethodAnalysis?> Methods, ImmutableArray<EndpointInfo?> Endpoints) input)
     {
-        var allMethods = input.Methods.OfType<MethodInfo>().ToList();
+        var allMethods = input.Methods.OfType<MethodAnalysis>().ToList();
         var allEndpoints = input.Endpoints.OfType<EndpointInfo>().ToList();
 
         if (allMethods.Count == 0 && allEndpoints.Count == 0)
@@ -288,28 +302,13 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         var methodErrorCodes = new Dictionary<string, List<ErrorCodeInfo>>();
         var methodCalls = new Dictionary<string, List<string>>();
 
-        Compilation? compilation = null;
-        if (allMethods.Count > 0)
-        {
-            compilation = allMethods[0].SemanticModel?.Compilation;
-        }
-
-        compilation ??= allEndpoints.FirstOrDefault()?.SemanticModel?.Compilation;
-
-        var interfaceCache = compilation is not null
-            ? new InterfaceCache(compilation)
-            : null;
-
-        foreach (var methodInfo in allMethods)
+        foreach (var ma in allMethods)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var key = methodInfo.TypeName + "." + methodInfo.MethodName;
-
-            if (methodErrorCodes.TryGetValue(key, out var existingCodes))
+            if (methodErrorCodes.TryGetValue(ma.Key, out var existingCodes))
             {
-                var overloadCodes = CollectErrorCodes(context, methodInfo);
-                foreach (var code in overloadCodes)
+                foreach (var code in ma.ErrorCodes)
                 {
                     if (existingCodes.All(e => e.Code != code.Code))
                     {
@@ -317,10 +316,9 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     }
                 }
 
-                var overloadCalls = CollectCalledMethods(methodInfo, interfaceCache);
-                if (methodCalls.TryGetValue(key, out var existingCalls))
+                if (methodCalls.TryGetValue(ma.Key, out var existingCalls))
                 {
-                    foreach (var ck in overloadCalls)
+                    foreach (var ck in ma.CalledKeys)
                     {
                         if (!existingCalls.Contains(ck))
                         {
@@ -330,18 +328,20 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 }
                 else
                 {
-                    methodCalls[key] = overloadCalls;
+                    methodCalls[ma.Key] = [.. ma.CalledKeys];
                 }
 
                 continue;
             }
 
-            var errorCodes = CollectErrorCodes(context, methodInfo);
-            var calledKeys = CollectCalledMethods(methodInfo, interfaceCache);
-
-            methodErrorCodes[key] = errorCodes;
-            methodCalls[key] = calledKeys;
+            methodErrorCodes[ma.Key] = [.. ma.ErrorCodes];
+            methodCalls[ma.Key] = [.. ma.CalledKeys];
         }
+
+        var compilation = allEndpoints.FirstOrDefault()?.SemanticModel?.Compilation;
+        var interfaceCache = compilation is not null
+            ? new InterfaceCache(compilation)
+            : null;
 
         foreach (var endpointInfo in allEndpoints)
         {
@@ -353,12 +353,11 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                 continue;
             }
 
-            var errorCodes = AnalyzeErrorCodesFromNode(context, endpointInfo.Body, endpointInfo.SemanticModel);
-            var calledKeys =
-                AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel, interfaceCache);
+            var (codes, calls) =
+                CollectCodeAnalysis(context, endpointInfo.Body, endpointInfo.SemanticModel, interfaceCache);
 
-            methodErrorCodes[key] = errorCodes;
-            methodCalls[key] = calledKeys;
+            methodErrorCodes[key] = codes;
+            methodCalls[key] = calls;
         }
 
         var callersOf = new Dictionary<string, List<string>>();
