@@ -26,6 +26,7 @@ builder.Services.AddOpenTelemetry()
 builder.Services.AddDomainException();
 builder.Services.AddProblemDetail();
 builder.Services.AddSingleton<OrderService>();
+builder.Services.AddSingleton<IOrderService>(sp => sp.GetRequiredService<OrderService>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

@@ -5,10 +5,10 @@ namespace Sstv.Host.Controllers;
 [Route("v1/orders")]
 public class OrderController : ControllerBase
 {
-    private readonly OrderService _orderService;
+    private readonly IOrderService _orderService;
     private readonly DeepNestedService _deepNestedService;
 
-    public OrderController(OrderService orderService, DeepNestedService deepNestedService)
+    public OrderController(IOrderService orderService, DeepNestedService deepNestedService)
     {
         _orderService = orderService;
         _deepNestedService = deepNestedService;

@@ -2,10 +2,21 @@ using Sstv.Domain.Sample;
 
 namespace Sstv.Host;
 
-public class OrderService
+public interface IOrderService
+{
+    public void ProcessOrder(string orderId);
+}
+
+
+public sealed class OrderService : IOrderService
 {
     public void ProcessOrder(string orderId)
     {
+        if (string.IsNullOrEmpty(orderId))
+        {
+            throw new MyException("INTERFACE_ONE");
+        }
+
         ValidateOrder(orderId);
         CheckInventory(orderId);
         ProcessPayment(orderId);
@@ -68,5 +79,16 @@ public class OrderService
     public void SomeOtherMethod()
     {
         throw ErrorCodes.Default.ToException();
+    }
+}
+
+public sealed class OrderAlternativeService : IOrderService
+{
+    public void ProcessOrder(string orderId)
+    {
+        if (string.IsNullOrEmpty(orderId))
+        {
+            throw new MyException("INTERFACE_TWO");
+        }
     }
 }
