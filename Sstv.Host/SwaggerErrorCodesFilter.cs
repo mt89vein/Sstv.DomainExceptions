@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Sstv.DomainExceptions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics.CodeAnalysis;
@@ -26,30 +26,33 @@ internal sealed class SwaggerErrorCodesFilter : IOperationFilter
                 var statusCode = errorDesc != null
                     ? ErrorCodeMapping.MapToStatusCode(errorDesc)
                     : 500;
-                return (c.Code, statusCode, errorDesc?.Description);
+                return (c.Code, statusCode, errorDesc?.Description, errorDesc?.HelpLink);
             })
             .GroupBy(x => x.statusCode)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         foreach (var (statusCode, errors) in groupedByStatus)
         {
-            var description = string.Join("\n", errors.Select(t =>
-                string.IsNullOrEmpty(t.Description)
-                    ? $"- {t.Code}"
-                    : $"- {t.Code}: {t.Description}"));
+            var description = string.Join(Environment.NewLine, errors.Select(t =>
+            {
+                var errorCode = !string.IsNullOrWhiteSpace(t.HelpLink)
+                    ? $"<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"{t.HelpLink}\">{t.Code}</a>"
+                    : t.Code;
+
+                return string.IsNullOrEmpty(t.Description)
+                    ? $"- {errorCode}"
+                    : $"- {errorCode}: {t.Description}";
+            }));
+
+            operation.Responses ??= new OpenApiResponses();
 
             var response = operation.Responses.TryGetValue(statusCode.ToString(CultureInfo.InvariantCulture), out var existing)
                 ? existing
                 : new OpenApiResponse();
 
-            if (string.IsNullOrEmpty(response.Description))
-            {
-                response.Description = description;
-            }
-            else
-            {
-                response.Description = response.Description + "\n\n" + description;
-            }
+            response.Description = string.IsNullOrEmpty(response.Description)
+                ? description
+                : response.Description + Environment.NewLine + Environment.NewLine + description;
 
             operation.Responses[statusCode.ToString(CultureInfo.InvariantCulture)] = response;
         }
