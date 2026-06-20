@@ -250,8 +250,34 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             context.CancellationToken.ThrowIfCancellationRequested();
 
             var key = methodInfo.TypeName + "." + methodInfo.MethodName;
-            if (methodErrorCodes.ContainsKey(key))
+
+            if (methodErrorCodes.TryGetValue(key, out var existingCodes))
             {
+                var overloadCodes = CollectErrorCodes(context, methodInfo);
+                foreach (var code in overloadCodes)
+                {
+                    if (existingCodes.All(e => e.Code != code.Code))
+                    {
+                        existingCodes.Add(code);
+                    }
+                }
+
+                var overloadCalls = CollectCalledMethods(methodInfo, interfaceImplCache);
+                if (methodCalls.TryGetValue(key, out var existingCalls))
+                {
+                    foreach (var ck in overloadCalls)
+                    {
+                        if (!existingCalls.Contains(ck))
+                        {
+                            existingCalls.Add(ck);
+                        }
+                    }
+                }
+                else
+                {
+                    methodCalls[key] = overloadCalls;
+                }
+
                 continue;
             }
 
