@@ -85,7 +85,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     spc.ReportDiagnostic(
                         Diagnostic.Create(
                             new DiagnosticDescriptor(
-                                "ECMC0001",
+                                "SSTVDE0001",
                                 "ErrorCodeMethodCollector failed",
                                 "ErrorCodeMethodCollector failed: {0}",
                                 "ErrorCodeMethodCollector",
