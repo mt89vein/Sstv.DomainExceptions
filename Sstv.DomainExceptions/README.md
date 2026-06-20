@@ -246,14 +246,6 @@ namespace Sstv.Host
 The namespace is derived from the assembly name. You can consume this dictionary to enrich logs, Swagger docs,
 or create custom error code monitoring.
 
-#### Disabling the generator
+#### Enabling the generator
 
-You can disable the source generator in csproj:
-
-```xml
-  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
-    <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.Filename)' == 'Sstv.DomainExceptions.Discovery.ErrorCodeMethodCollector'" />
-    </ItemGroup>
-  </Target>
-```
+This generator is useful only when its output is consumed. So you need to manually activate it by adding attribute: [assembly: CollectErrorCodes]
