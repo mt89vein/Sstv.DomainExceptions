@@ -1,4 +1,4 @@
-﻿using Sstv.Domain.Sample;
+using Sstv.Domain.Sample;
 using Sstv.DomainExceptions;
 using System.Collections.Frozen;
 

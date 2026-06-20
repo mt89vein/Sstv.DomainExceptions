@@ -1,4 +1,4 @@
-﻿namespace Sstv.DomainExceptions;
+namespace Sstv.DomainExceptions;
 
 /// <summary>
 /// Marker attribute to enable ErrorCodesCollector source generator.

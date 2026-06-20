@@ -1,4 +1,4 @@
-﻿using Sstv.DomainExceptions;
+using Sstv.DomainExceptions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Sstv.Domain.Sample;
