@@ -587,7 +587,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             .Select(n =>
             {
                 if (!n.StartsWith("global::", StringComparison.Ordinal) && n.Contains('.'))
+                {
                     return "global::" + n;
+                }
+
                 return n;
             })
             .OrderBy(n => n)
@@ -600,7 +603,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             .Select(n =>
             {
                 if (!n.StartsWith("global::", StringComparison.Ordinal) && n.Contains('.'))
+                {
                     return "global::" + n;
+                }
+
                 return n;
             })
             .Distinct()

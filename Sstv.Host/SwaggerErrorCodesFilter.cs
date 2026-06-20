@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.OpenApi;
 using Sstv.DomainExceptions;
@@ -7,6 +8,7 @@ using System.Globalization;
 
 namespace Sstv.Host;
 
+[UsedImplicitly]
 internal sealed class SwaggerErrorCodesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
