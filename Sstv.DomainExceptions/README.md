@@ -199,7 +199,7 @@ Cons:
 
 Starting from version 4.0.0, the library includes a source generator (`ErrorCodeMethodCollector`) that automatically
 discovers all error codes used across your application's call stack. At build time, it produces a
-`FrozenDictionary<string, HashSet<ErrorCodeSource>>` mapping each method/endpoint to the error codes it can produce.
+`FrozenDictionary<string, ErrorCodeSource[]>` mapping each method/endpoint to the error codes it can produce.
 
 The generator is useful for enriching Swagger/OpenAPI docs with error codes, creating monitoring dashboards, or
 validating that all code paths produce known error codes.
@@ -241,8 +241,8 @@ namespace Sstv.Host
 {
     public static partial class ErrorCodeMethodCollector
     {
-        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =
-            new Dictionary<string, HashSet<ErrorCodeSource>>
+        public static readonly FrozenDictionary<string, ErrorCodeSource[]> ErrorCodesByMethod =
+            new Dictionary<string, ErrorCodeSource[]>
             {
                 ["Sstv.Host.Controllers.OrderController.CreateOrder"] = [
                     new ErrorCodeSource(ErrorCodes.InvalidData.GetErrorCode(), ErrorCodeSourceType.Enum, typeof(ErrorCodes)),
@@ -311,7 +311,7 @@ The generator traces error codes across method boundaries:
 |------------|---------|
 | **Runtime-computed codes** | Error codes from variables, string interpolation (`$"PREFIX_{id}"`), or method calls (`GetErrorCode()`) — only compile-time constants, literals, and enum members work |
 | **Catch-and-re-throw** | `catch (Exception ex) { throw ex; }` — the variable initializer is not in the same method |
-| **Object initializers** | `new MyException { ErrorCode = "X" }` — named constructor arguments (`errorCode:`) are supported |
+| **Object initializers** | `new MyException { ErrorCode = "X" }` |
 | **`with` expressions** on records | Not handled |
 | **Bare `throw;`** | Silent no-op |
 | **Ternary/conditional inside throw** | Only the outermost expression is analyzed |
