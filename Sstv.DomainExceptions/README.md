@@ -197,26 +197,22 @@ Cons:
 
 ### Error code discovery (source generator)
 
-Starting from version 4.0.0, the library includes a source generator that automatically discovers all error codes
-used across your application's call stack. At build time, it produces a `FrozenDictionary<string, HashSet<ErrorCodeSource>>`
-mapping each method to the error codes it can produce (via throw, `.ToException()`, `DomainException` constructor calls,
-or propagation through the call graph).
+Starting from version 4.0.0, the library includes a source generator (`ErrorCodeMethodCollector`) that automatically
+discovers all error codes used across your application's call stack. At build time, it produces a
+`FrozenDictionary<string, HashSet<ErrorCodeSource>>` mapping each method/endpoint to the error codes it can produce.
 
-#### How it works
+The generator is useful for enriching Swagger/OpenAPI docs with error codes, creating monitoring dashboards, or
+validating that all code paths produce known error codes.
 
-The generator analyzes all method bodies and tracks error codes by:
+#### Enabling
 
-- **Direct throws**: `throw ErrorCodes.InvalidData.ToException()`
-- **Constructor arguments**: `throw new MyException(ErrorCodes.Default.GetErrorCode())`
-- **String literals**: `throw new MyException("SSTV.10004")` (if `MyException` derives from `DomainException`)
-- **Variable tracing**: follows `throw ex` back to the variable declaration and analyzes its initializer
-- **Call graph propagation**: traces error codes across method calls (up to 10 levels deep)
-- **Fluent API**: `new MyException(code).WithDetailedMessage(...).WithAdditionalData(...)`
+Add the assembly-level attribute to activate the generator:
 
-#### Minimal API support
+```csharp
+[assembly: CollectErrorCodes]
+```
 
-The generator detects endpoints registered via `.MapGet()`, `.MapPost()`, `.MapPut()`, `.MapDelete()`, `.MapPatch()`,
-and `.MapGroup()`. Endpoint keys use the `.WithName()` value if provided, otherwise the route pattern.
+Without this attribute, the generator produces no output.
 
 #### Generated output
 
@@ -243,9 +239,70 @@ namespace Sstv.Host
 }
 ```
 
-The namespace is derived from the assembly name. You can consume this dictionary to enrich logs, Swagger docs,
-or create custom error code monitoring.
+The namespace is derived from the assembly name. The dictionary is keyed by `FullTypeName.MethodName` for
+controllers/services, or by the `WithName()` value (falling back to route pattern) for minimal API endpoints.
+Each entry lists all error codes that can originate from that method, including those from methods it calls.
 
-#### Enabling the generator
+#### Supported detection patterns
 
-This generator is useful only when its output is consumed. So you need to manually activate it by adding attribute: [assembly: CollectErrorCodes]
+The generator detects error codes from these sources:
+
+| Pattern | Example | Source type |
+|---------|---------|-------------|
+| `DomainException` constructor with string literal | `throw new MyException("SSTV.10004")` | `Constant` |
+| `DomainException` constructor with `const` field | `throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)` | `Constant` |
+| `DomainException` constructor with enum member | `throw new MyException(ErrorCodes.InvalidData)` | `Enum` |
+| `.ToException()` on enum value | `throw ErrorCodes.SomethingBadHappen.ToException()` | `Enum` |
+| Fluent chain with `WithXxx()` | `throw ErrorCodes.Default.ToException().WithDetailedMessage("msg")` | `Enum` |
+| Variable-declared exception then thrown | `var x = new MyException("CODE"); throw x;` | `Constant` |
+| Return with error code object (Result pattern) | `return Result.Fail(new ErrorCodeResult(ErrorCodes.InvalidData))` | `Enum` |
+| Named constructor argument (literal) | `throw new MyException(errorCode: "SSTV.10004")` | `Constant` |
+| Named constructor argument (const/enum) | `throw new MyException(errorCode: ErrorCodes.InvalidData)` | `Enum` / `Constant` |
+
+Error codes from string literals and `const` fields are stored as-is. Enum-based codes are stored as the member
+name (e.g. `"InvalidData"`, `"SomethingBadHappen"`), and the generated dictionary references the extension class
+to resolve them to their full string value at runtime via `GetErrorCode()`.
+
+Enum members and const fields are accepted regardless of casing (e.g. `ErrorCodes.myLowercaseMember`).
+Non-resolved identifiers (not backed by a symbol) still require an uppercase first letter to reduce noise.
+
+#### Supported call-chain propagation
+
+The generator traces error codes across method boundaries:
+
+- **Direct calls**: error codes from `ValidateOrder()` propagate to `ProcessOrder()` that calls it.
+- **Cross-class calls**: calls to methods on other service classes are tracked by declaring type.
+- **Interface calls**: calls through `IOrderService` are resolved to concrete implementations in the same
+  assembly (`OrderService`, `OrderAlternativeService`). Codes from all implementations are merged.
+- **Method overloads**: multiple overloads with the same name are merged under one key. Error codes and
+  call chains from all overloads are combined.
+- **Generic methods**: generic methods and their overloads with different arity are supported. The key is
+  the simple method name (without backtick suffix); overloads are merged.
+- **Transitive closure**: up to 10 iterations of propagation across the call graph.
+
+#### Supported endpoint types
+
+| Endpoint type | Detection | Naming |
+|---------------|-----------|--------|
+| Controller action methods | `MethodDeclarationSyntax` | `FullTypeName.MethodName` |
+| Minimal API `MapGet/Post/Put/Delete/Patch` | `InvocationExpressionSyntax` | `.WithName(...)` value or route pattern |
+| Minimal API `MapGroup` / `MapMethods` | Same as above | Same as above |
+
+#### What is NOT supported (limitations)
+
+| Limitation | Details |
+|------------|---------|
+| **Runtime-computed codes** | Error codes from variables, string interpolation (`$"PREFIX_{id}"`), or method calls (`GetErrorCode()`) — only compile-time constants, literals, and enum members work |
+| **Catch-and-re-throw** | `catch (Exception ex) { throw ex; }` — the variable initializer is not in the same method |
+| **Object initializers** | `new MyException { ErrorCode = "X" }` — named constructor arguments (`errorCode:`) are supported |
+| **`with` expressions** on records | Not handled |
+| **Bare `throw;`** | Silent no-op |
+| **Ternary/conditional inside throw** | Only the outermost expression is analyzed |
+| **Call chain depth > 10** | Propagation loop hardcoded to 10 iterations |
+| **Delegates / lambdas / `Func<>`/`Action<>`** | Inlined lambdas in Map methods are analyzed, but passing a method as a delegate is not traced |
+| **Virtual dispatch / polymorphism** | Tracked by declaring type, not runtime type |
+| **Interface implementations in external assemblies** | Cache only scans source types (same assembly) |
+| **Reflection / `dynamic` calls** | Not resolvable via Roslyn semantic model |
+| **Extension method calls on interfaces** | Resolved to the static extension class, not the interface |
+| **Structs / records / abstract classes** | Excluded from interface implementation cache |
+| **`Results.BadRequest()`, `Results.Ok()` etc.** | Not analyzed — explicit `IResult` returns must be handled manually |
