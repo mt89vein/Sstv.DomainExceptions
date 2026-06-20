@@ -20,6 +20,21 @@ public sealed class OrderService : IOrderService
         ValidateOrder(orderId);
         CheckInventory(orderId);
         ProcessPayment(orderId);
+        ProcessItem(orderId);
+        ProcessItem(orderId, 42);
+    }
+
+    public void ProcessItem<T>(T item)
+    {
+        if (item is null)
+        {
+            throw new MyException("GENERIC_NULL");
+        }
+    }
+
+    public void ProcessItem<T, TExtra>(T item, TExtra extra)
+    {
+        throw ErrorCodes.Default.ToException();
     }
 
     public void ValidateOrder(string orderId)
