@@ -58,4 +58,22 @@ public class MyController : ControllerBase
     {
         throw new InvalidOperationException("DetailedError");
     }
+
+    [HttpGet("controller-example-9")]
+    public IActionResult WithNamedArg()
+    {
+        throw new MyException(errorCode: "NAMED_ARG_CODE");
+    }
+
+    [HttpGet("controller-example-10")]
+    public IActionResult WithNamedArgEnum()
+    {
+        throw new MyException(errorCode: DomainErrorCodes.SOMETHING_BAD_HAPPEN);
+    }
+
+    [HttpGet("controller-example-11")]
+    public IActionResult WithLowercaseConst()
+    {
+        throw new MyException(DomainErrorCodes.notFound);
+    }
 }

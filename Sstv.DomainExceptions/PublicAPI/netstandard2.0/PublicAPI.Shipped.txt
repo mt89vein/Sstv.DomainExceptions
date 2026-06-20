@@ -118,3 +118,7 @@ Sstv.DomainExceptions.ErrorCodeSourceType.Constant = 1 -> Sstv.DomainExceptions.
 Sstv.DomainExceptions.ErrorCodeSourceType.Enum = 0 -> Sstv.DomainExceptions.ErrorCodeSourceType
 Sstv.DomainExceptions.CollectErrorCodesAttribute
 Sstv.DomainExceptions.CollectErrorCodesAttribute.CollectErrorCodesAttribute() -> void
+Sstv.DomainExceptions.CollectErrorCodesAttribute.ClassName.get -> string?
+Sstv.DomainExceptions.CollectErrorCodesAttribute.ClassName.set -> void
+Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.get -> int
+Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.set -> void

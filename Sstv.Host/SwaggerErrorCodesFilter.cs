@@ -16,7 +16,7 @@ internal sealed class SwaggerErrorCodesFilter : IOperationFilter
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (!TryGetErrorCodes(context, operation, out var errorCodes) || errorCodes.Count == 0)
+        if (!TryGetErrorCodes(context, operation, out var errorCodes) || errorCodes.Length == 0)
         {
             return;
         }
@@ -63,7 +63,7 @@ internal sealed class SwaggerErrorCodesFilter : IOperationFilter
     private static bool TryGetErrorCodes(
         OperationFilterContext context,
         OpenApiOperation operation,
-        [NotNullWhen(returnValue: true)] out HashSet<ErrorCodeSource>? errorCodes
+        [NotNullWhen(returnValue: true)] out ErrorCodeSource[]? errorCodes
     )
     {
         // Controller action: key = FullTypeName.ActionName
