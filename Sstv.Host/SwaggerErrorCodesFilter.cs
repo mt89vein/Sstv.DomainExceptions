@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace Sstv.Host;
 
-public class SwaggerErrorCodesFilter : IOperationFilter
+internal sealed class SwaggerErrorCodesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -31,11 +31,8 @@ public class SwaggerErrorCodesFilter : IOperationFilter
             .GroupBy(x => x.statusCode)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        foreach (var kvp in groupedByStatus)
+        foreach (var (statusCode, errors) in groupedByStatus)
         {
-            var statusCode = kvp.Key;
-            var errors = kvp.Value;
-
             var description = string.Join("\n", errors.Select(t =>
                 string.IsNullOrEmpty(t.Description)
                     ? $"- {t.Code}"
@@ -61,7 +58,8 @@ public class SwaggerErrorCodesFilter : IOperationFilter
     private static bool TryGetErrorCodes(
         OperationFilterContext context,
         OpenApiOperation operation,
-        [NotNullWhen(returnValue: true)] out HashSet<ErrorCodeSource>? errorCodes)
+        [NotNullWhen(returnValue: true)] out HashSet<ErrorCodeSource>? errorCodes
+    )
     {
         // Controller action: key = FullTypeName.ActionName
         if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerAction)

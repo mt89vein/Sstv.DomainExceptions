@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Sstv.Domain.Sample;
 using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.DebugViewer;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;

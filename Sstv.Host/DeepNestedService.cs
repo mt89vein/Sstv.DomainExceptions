@@ -1,4 +1,6 @@
-namespace Sstv.Host.Nested.Level1.Level2;
+using Sstv.Domain.Sample;
+
+namespace Sstv.Host;
 
 public class DeepNestedService
 {
@@ -19,7 +21,7 @@ public class DeepNestedService
     {
         if (string.IsNullOrEmpty(input))
         {
-            throw ErrorCodes.InvalidData.ToException();
+            throw SecondErrorCodes.SomethingGetsWrong.ToException();
         }
 
         throw ErrorCodes.SomethingBadHappen.ToException();

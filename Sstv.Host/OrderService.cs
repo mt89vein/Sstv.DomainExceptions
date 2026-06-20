@@ -1,3 +1,5 @@
+using Sstv.Domain.Sample;
+
 namespace Sstv.Host;
 
 public class OrderService
@@ -42,6 +44,21 @@ public class OrderService
         if (balance < amount)
         {
             throw ErrorCodes.NotEnoughMoney.ToException()
+                .WithDetailedMessage($"Insufficient balance. Required: {amount}, Available: {balance}");
+        }
+
+        SomeOtherMethod();
+        ProcessPayment(1);
+    }
+
+    public void ProcessPayment(int orderId)
+    {
+        var balance = 100m;
+        var amount = 500m;
+
+        if (balance < amount)
+        {
+            throw ErrorCodes.WhateverElse.ToException()
                 .WithDetailedMessage($"Insufficient balance. Required: {amount}, Available: {balance}");
         }
 

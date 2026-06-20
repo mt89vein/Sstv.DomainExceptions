@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Sstv.Domain.Sample;
 
 namespace Sstv.Host;
 

@@ -1,6 +1,6 @@
 ﻿using Sstv.DomainExceptions;
 
-namespace Sstv.Host;
+namespace Sstv.Domain.Sample;
 
 [ErrorDescription(Prefix = "SSTV", HelpLink = "https://help.myproject.ru/error-codes/{0}", Level = Level.Critical)]
 [ExceptionConfig(ClassName = "FirstException")]

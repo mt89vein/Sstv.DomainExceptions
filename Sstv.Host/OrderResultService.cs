@@ -1,4 +1,5 @@
 using FluentResults;
+using Sstv.Domain.Sample;
 
 namespace Sstv.Host;
 

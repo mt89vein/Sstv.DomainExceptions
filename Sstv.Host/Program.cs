@@ -4,10 +4,13 @@
 
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+[assembly: CollectErrorCodes]
 
 var builder = WebApplication.CreateBuilder(args);
 

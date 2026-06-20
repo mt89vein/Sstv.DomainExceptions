@@ -1,3 +1,5 @@
+using Sstv.Domain.Sample;
+
 namespace Sstv.Host;
 
 public static class MinimalEndpoints

@@ -1,7 +1,7 @@
 ﻿using Sstv.DomainExceptions;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Sstv.Host;
+namespace Sstv.Domain.Sample;
 
 public static class DomainErrorCodes
 {
