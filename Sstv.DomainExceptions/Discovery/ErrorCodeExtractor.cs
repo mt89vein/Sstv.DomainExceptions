@@ -129,7 +129,8 @@ internal partial class ErrorCodeMethodCollector
 
                 if (errorCodes.All(e => e.Code != codeValue) && (symbol is IFieldSymbol || IsPotentialCode(errorCode)))
                 {
-                    errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
+                    errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName,
+                        extensionClassName));
                 }
             }
         }
@@ -223,7 +224,8 @@ internal partial class ErrorCodeMethodCollector
 
             toExceptionInvoke ??= expression.DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .FirstOrDefault(i => i.Expression.ToString().EndsWith(".ToException", StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(i =>
+                    i.Expression.ToString().EndsWith(".ToException", StringComparison.OrdinalIgnoreCase));
             if (toExceptionInvoke?.Expression is MemberAccessExpressionSyntax mae)
             {
                 try
@@ -330,6 +332,7 @@ internal partial class ErrorCodeMethodCollector
                 {
                     errorCodes.Add(new ErrorCodeInfo(stringValue, ErrorCodeSourceType.Constant, null, null));
                 }
+
                 continue;
             }
 
@@ -381,7 +384,8 @@ internal partial class ErrorCodeMethodCollector
 
             if ((hasResolvedField || IsPotentialCode(potentialCode)) && errorCodes.All(e => e.Code != codeValue))
             {
-                errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
+                errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName,
+                    extensionClassName));
             }
             else if (IsPotentialCode(argText) && !argText.Contains('.'))
             {

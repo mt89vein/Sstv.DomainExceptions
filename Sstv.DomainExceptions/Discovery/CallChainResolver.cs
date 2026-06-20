@@ -59,13 +59,17 @@ internal partial class ErrorCodeMethodCollector
                     _typeMap[type.ToDisplayString()] = type;
                 }
             }
+
             return _typeMap;
         }
 
         private List<INamedTypeSymbol> GetClassTypes()
         {
-            return _classTypes ??= [.. GetTypeMap().Values
-                .Where(t => t is { TypeKind: TypeKind.Class, IsAbstract: false, IsStatic: false })];
+            return _classTypes ??=
+            [
+                .. GetTypeMap().Values
+                    .Where(t => t is { TypeKind: TypeKind.Class, IsAbstract: false, IsStatic: false })
+            ];
         }
 
         private void BuildForInterface(string interfaceName)
@@ -204,6 +208,4 @@ internal partial class ErrorCodeMethodCollector
             }
         }
     }
-
-
 }

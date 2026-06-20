@@ -10,8 +10,15 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 {
     private static readonly HashSet<string> _mapMethodNames = new(StringComparer.Ordinal)
     {
-        "Map", "MapGet", "MapPost", "MapPut", "MapDelete", "MapPatch", "MapQuery",
-        "MapGroup", "MapMethods"
+        "Map",
+        "MapGet",
+        "MapPost",
+        "MapPut",
+        "MapDelete",
+        "MapPatch",
+        "MapQuery",
+        "MapGroup",
+        "MapMethods"
     };
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -19,8 +26,8 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         var settings = context.CompilationProvider
             .Select(static (compilation, _) =>
             {
-                var attr = compilation.Assembly.GetAttributes().FirstOrDefault(
-                    a => a.AttributeClass?.ToDisplayString() == "Sstv.DomainExceptions.CollectErrorCodesAttribute");
+                var attr = compilation.Assembly.GetAttributes().FirstOrDefault(a =>
+                    a.AttributeClass?.ToDisplayString() == "Sstv.DomainExceptions.CollectErrorCodesAttribute");
 
                 if (attr is null)
                 {
@@ -178,7 +185,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
         }
 
         var endpointName = GetEndpointName(invocation);
-        var key = endpointName ?? routePattern;
+        var key = endpointName ?? (GetHttpMethod(invocation) + " " + routePattern);
 
         var body = GetEndpointBody(invocation);
         if (body is null)
@@ -193,6 +200,26 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             Body = body,
             SemanticModel = ctx.SemanticModel
         };
+    }
+
+    private static string GetHttpMethod(InvocationExpressionSyntax invocation)
+    {
+        if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
+        {
+            return memberAccess.Name.Identifier.Text switch
+            {
+                "MapGet" => "GET",
+                "MapPost" => "POST",
+                "MapPut" => "PUT",
+                "MapDelete" => "DELETE",
+                "MapPatch" => "PATCH",
+                "MapQuery" => "QUERY",
+                "MapMethods" => "METHODS",
+                _ => "*"
+            };
+        }
+
+        return "*";
     }
 
     private static string? GetRoutePattern(InvocationExpressionSyntax invocation)
@@ -327,47 +354,82 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             }
 
             var errorCodes = AnalyzeErrorCodesFromNode(context, endpointInfo.Body, endpointInfo.SemanticModel);
-            var calledKeys = AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel, interfaceCache);
+            var calledKeys =
+                AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel, interfaceCache);
 
             methodErrorCodes[key] = errorCodes;
             methodCalls[key] = calledKeys;
         }
 
-        for (var iteration = 0; iteration < settings.MaxPropagationDepth.GetValueOrDefault(10); iteration++)
+        var callersOf = new Dictionary<string, List<string>>();
+        foreach (var kvp in methodCalls)
+        {
+            var caller = kvp.Key;
+            foreach (var callee in kvp.Value)
+            {
+                if (!callersOf.TryGetValue(callee, out var list))
+                {
+                    list = [];
+                    callersOf[callee] = list;
+                }
+
+                list.Add(caller);
+            }
+        }
+
+        var workSet = new List<string>(methodErrorCodes.Count);
+        foreach (var kvp in methodErrorCodes)
+        {
+            if (kvp.Value.Count > 0)
+            {
+                workSet.Add(kvp.Key);
+            }
+        }
+
+        var maxDepth = settings.MaxPropagationDepth.GetValueOrDefault(10);
+        for (var iteration = 0; iteration < maxDepth && workSet.Count > 0; iteration++)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var anyAdded = false;
-            foreach (var kvp in methodCalls)
+            var nextWorkSet = new List<string>();
+
+            foreach (var key in workSet)
             {
-                var key = kvp.Key;
-                var calledKeys = kvp.Value;
+                if (!callersOf.TryGetValue(key, out var callers))
+                {
+                    continue;
+                }
 
                 if (!methodErrorCodes.TryGetValue(key, out var currentCodes))
                 {
                     continue;
                 }
 
-                foreach (var calledKey in calledKeys)
+                foreach (var caller in callers)
                 {
-                    if (methodErrorCodes.TryGetValue(calledKey, out var calledCodes) && calledCodes.Count > 0)
+                    if (!methodErrorCodes.TryGetValue(caller, out var callerCodes))
                     {
-                        foreach (var code in calledCodes)
+                        continue;
+                    }
+
+                    var added = false;
+                    foreach (var code in currentCodes)
+                    {
+                        if (callerCodes.All(e => e.Code != code.Code))
                         {
-                            if (currentCodes.All(e => e.Code != code.Code))
-                            {
-                                currentCodes.Add(code);
-                                anyAdded = true;
-                            }
+                            callerCodes.Add(code);
+                            added = true;
                         }
+                    }
+
+                    if (added)
+                    {
+                        nextWorkSet.Add(caller);
                     }
                 }
             }
 
-            if (!anyAdded)
-            {
-                break;
-            }
+            workSet = nextWorkSet;
         }
 
         if (methodErrorCodes.All(kvp => kvp.Value.Count == 0))

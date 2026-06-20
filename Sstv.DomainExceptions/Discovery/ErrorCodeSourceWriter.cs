@@ -108,7 +108,8 @@ internal partial class ErrorCodeMethodCollector
             var codes = string.Join(", ", methodErrorCodes[key].Select(c =>
             {
                 var typeName = c.SourceTypeName;
-                if (typeName != null && !typeName.StartsWith(GLOBAL, StringComparison.Ordinal) && typeName.Contains('.'))
+                if (typeName != null && !typeName.StartsWith(GLOBAL, StringComparison.Ordinal) &&
+                    typeName.Contains('.'))
                 {
                     typeName = GLOBAL + typeName;
                 }
@@ -124,7 +125,8 @@ internal partial class ErrorCodeMethodCollector
                 }
 
                 var extTypeName = c.ExtensionClassName;
-                if (extTypeName != null && !extTypeName.StartsWith(GLOBAL, StringComparison.Ordinal) && extTypeName.Contains('.'))
+                if (extTypeName != null && !extTypeName.StartsWith(GLOBAL, StringComparison.Ordinal) &&
+                    extTypeName.Contains('.'))
                 {
                     extTypeName = GLOBAL + extTypeName;
                 }
