@@ -10,7 +10,9 @@ internal partial class ErrorCodeMethodCollector
 
     private static void GenerateSource(SourceProductionContext context,
         Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes,
-        string namespaceName)
+        string namespaceName,
+        string? className
+    )
     {
         var keysToEmit = methodErrorCodes.Where(k => k.Value.Count > 0).Select(k => k.Key).ToList();
 
@@ -92,7 +94,7 @@ internal partial class ErrorCodeMethodCollector
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
         sb.AppendLine("{");
-        sb.AppendLine("    public static partial class ErrorCodeMethodCollector");
+        sb.AppendLine($"    public static partial class {className ?? "ErrorCodeMethodCollector"}");
         sb.AppendLine("    {");
         sb.AppendLine(
             "        public static readonly FrozenDictionary<string, HashSet<ErrorCodeSource>> ErrorCodesByMethod =");

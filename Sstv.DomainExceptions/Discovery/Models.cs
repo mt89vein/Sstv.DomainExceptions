@@ -45,6 +45,13 @@ internal sealed class ErrorCodeInfo
     }
 }
 
+internal sealed class GeneratorSettings
+{
+    public bool IsEnabled { get; set; }
+    public int? MaxPropagationDepth { get; set; }
+    public string? ClassName { get; set; }
+}
+
 internal static class ErrorCodeAnalysis
 {
     public static string? GetExtensionClassName(ITypeSymbol? enumType)

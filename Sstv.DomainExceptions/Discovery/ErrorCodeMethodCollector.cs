@@ -16,10 +16,36 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var enabled = context.CompilationProvider
+        var settings = context.CompilationProvider
             .Select(static (compilation, _) =>
-                compilation.Assembly.GetAttributes().Any(
-                    a => a.AttributeClass?.ToDisplayString() == "Sstv.DomainExceptions.CollectErrorCodesAttribute"));
+            {
+                var attr = compilation.Assembly.GetAttributes().FirstOrDefault(
+                    a => a.AttributeClass?.ToDisplayString() == "Sstv.DomainExceptions.CollectErrorCodesAttribute");
+
+                if (attr is null)
+                {
+                    return new GeneratorSettings { IsEnabled = false };
+                }
+
+                var s = new GeneratorSettings { IsEnabled = true };
+
+                foreach (var na in attr.NamedArguments)
+                {
+                    switch (na.Key)
+                    {
+                        case "MaxPropagationDepth" when na.Value.Value is int depth:
+                            s.MaxPropagationDepth = depth;
+                            break;
+                        case "ClassName" when na.Value.Value is string name:
+                            s.ClassName = name;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                return s;
+            });
 
         var methods = context.SyntaxProvider
             .CreateSyntaxProvider(
@@ -56,18 +82,19 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             .Collect();
 
         context.RegisterSourceOutput(
-            enabled.Combine(methods.Combine(endpoints)),
+            settings.Combine(methods.Combine(endpoints)),
             static (spc, data) =>
             {
-                var (isEnabled, (methods, endpoints)) = data;
-                if (!isEnabled)
+                var (s, (methods, endpoints)) = data;
+
+                if (!s.IsEnabled)
                 {
                     return;
                 }
 
                 try
                 {
-                    GenerateErrorCodesDictionary(spc, (methods, endpoints));
+                    GenerateErrorCodesDictionary(spc, s, (methods, endpoints));
                 }
                 catch (Exception ex)
                 {
@@ -220,6 +247,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
     private static void GenerateErrorCodesDictionary(
         SourceProductionContext context,
+        GeneratorSettings settings,
         (ImmutableArray<MethodInfo?> Methods, ImmutableArray<EndpointInfo?> Endpoints) input)
     {
         var allMethods = input.Methods.OfType<MethodInfo>().ToList();
@@ -241,8 +269,8 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
         compilation ??= allEndpoints.FirstOrDefault()?.SemanticModel?.Compilation;
 
-        var interfaceImplCache = compilation is not null
-            ? BuildInterfaceImplementationCache(compilation)
+        var interfaceCache = compilation is not null
+            ? new InterfaceCache(compilation)
             : null;
 
         foreach (var methodInfo in allMethods)
@@ -262,7 +290,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     }
                 }
 
-                var overloadCalls = CollectCalledMethods(methodInfo, interfaceImplCache);
+                var overloadCalls = CollectCalledMethods(methodInfo, interfaceCache);
                 if (methodCalls.TryGetValue(key, out var existingCalls))
                 {
                     foreach (var ck in overloadCalls)
@@ -282,7 +310,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             }
 
             var errorCodes = CollectErrorCodes(context, methodInfo);
-            var calledKeys = CollectCalledMethods(methodInfo, interfaceImplCache);
+            var calledKeys = CollectCalledMethods(methodInfo, interfaceCache);
 
             methodErrorCodes[key] = errorCodes;
             methodCalls[key] = calledKeys;
@@ -299,13 +327,13 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             }
 
             var errorCodes = AnalyzeErrorCodesFromNode(context, endpointInfo.Body, endpointInfo.SemanticModel);
-            var calledKeys = AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel, interfaceImplCache);
+            var calledKeys = AnalyzeCalledMethodsFromNode(endpointInfo.Body, endpointInfo.SemanticModel, interfaceCache);
 
             methodErrorCodes[key] = errorCodes;
             methodCalls[key] = calledKeys;
         }
 
-        for (var iteration = 0; iteration < 10; iteration++)
+        for (var iteration = 0; iteration < settings.MaxPropagationDepth.GetValueOrDefault(10); iteration++)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -349,6 +377,6 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
         var namespaceName = compilation?.AssemblyName ?? "Sstv.DomainExceptions";
 
-        GenerateSource(context, methodErrorCodes, namespaceName);
+        GenerateSource(context, methodErrorCodes, namespaceName, settings.ClassName);
     }
 }

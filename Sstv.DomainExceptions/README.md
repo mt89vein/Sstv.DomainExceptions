@@ -214,6 +214,23 @@ Add the assembly-level attribute to activate the generator:
 
 Without this attribute, the generator produces no output.
 
+#### Configuration
+
+The `[CollectErrorCodes]` attribute supports optional named arguments:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `MaxPropagationDepth` | `int` | `10` | Maximum call chain depth for error code propagation through method calls. |
+| `ClassName` | `string?` | `"ErrorCodeMethodCollector"` | Name of the generated partial class. Useful for avoiding conflicts. |
+
+Example with custom settings:
+
+```csharp
+[assembly: CollectErrorCodes(MaxPropagationDepth = 5, ClassName = "AppErrorCodes")]
+```
+
+This generates `AppErrorCodes.ErrorCodesByMethod` dictionary and limits call chain propagation to 5 levels deep.
+
 #### Generated output
 
 ```csharp

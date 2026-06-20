@@ -127,7 +127,7 @@ internal partial class ErrorCodeMethodCollector
                 var codeValue = constantValue ?? errorCode;
                 var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? fullMatch : null;
 
-                if (errorCodes.All(e => e.Code != errorCode) && (symbol is IFieldSymbol || IsPotentialCode(errorCode)))
+                if (errorCodes.All(e => e.Code != codeValue) && (symbol is IFieldSymbol || IsPotentialCode(errorCode)))
                 {
                     errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
                 }
@@ -379,7 +379,7 @@ internal partial class ErrorCodeMethodCollector
             var codeValue = constantValue ?? potentialCode;
             var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? argText : null;
 
-            if ((hasResolvedField || IsPotentialCode(potentialCode)) && errorCodes.All(e => e.Code != potentialCode))
+            if ((hasResolvedField || IsPotentialCode(potentialCode)) && errorCodes.All(e => e.Code != codeValue))
             {
                 errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
             }
