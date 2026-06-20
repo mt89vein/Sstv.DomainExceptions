@@ -127,7 +127,7 @@ internal partial class ErrorCodeMethodCollector
                 var codeValue = constantValue ?? errorCode;
                 var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? fullMatch : null;
 
-                if (errorCodes.All(e => e.Code != errorCode) && IsPotentialCode(errorCode))
+                if (errorCodes.All(e => e.Code != errorCode) && (symbol is IFieldSymbol || IsPotentialCode(errorCode)))
                 {
                     errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
                 }
@@ -347,6 +347,7 @@ internal partial class ErrorCodeMethodCollector
             string? typeName = null;
             string? extensionClassName = null;
             string? constantValue = null;
+            var hasResolvedField = false;
 
             if (semanticModel is not null && arg.Expression is MemberAccessExpressionSyntax maes)
             {
@@ -355,6 +356,7 @@ internal partial class ErrorCodeMethodCollector
                     var symbol = semanticModel.GetSymbolInfo(maes).Symbol;
                     if (symbol is IFieldSymbol fieldSymbol)
                     {
+                        hasResolvedField = true;
                         typeName = fieldSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         extensionClassName = ErrorCodeAnalysis.GetExtensionClassName(fieldSymbol.ContainingType);
                         if (fieldSymbol.ContainingType.TypeKind == TypeKind.Enum)
@@ -377,7 +379,7 @@ internal partial class ErrorCodeMethodCollector
             var codeValue = constantValue ?? potentialCode;
             var fullEnumExpression = sourceType == ErrorCodeSourceType.Enum ? argText : null;
 
-            if (IsPotentialCode(potentialCode) && errorCodes.All(e => e.Code != potentialCode))
+            if ((hasResolvedField || IsPotentialCode(potentialCode)) && errorCodes.All(e => e.Code != potentialCode))
             {
                 errorCodes.Add(new ErrorCodeInfo(codeValue, sourceType, fullEnumExpression, typeName, extensionClassName));
             }
