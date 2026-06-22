@@ -222,6 +222,7 @@ The `[CollectErrorCodes]` attribute supports optional named arguments:
 |-----------|------|---------|-------------|
 | `MaxPropagationDepth` | `int` | `10` | Maximum call chain depth for error code propagation through method calls. |
 | `ClassName` | `string?` | `"ErrorCodeMethodCollector"` | Name of the generated partial class. Useful for avoiding conflicts. |
+| `Types` | `Type[]?` | `null` | Types that are allowed to declare error codes. All member accesses not backed by a symbol from one of these types are discarded as false positives. |
 
 Example with custom settings:
 
@@ -230,6 +231,25 @@ Example with custom settings:
 ```
 
 This generates `AppErrorCodes.ErrorCodesByMethod` dictionary and limits call chain propagation to 5 levels deep.
+
+#### Reducing false positives with `Types`
+
+In large projects, the generator may pick up non-error-code member accesses like `UriKind.Relative`, `Url.Action`,
+or `now.Year` inside return/throw expressions. These are syntactically indistinguishable from error code
+references like `ErrorCodes.InvalidData` or `DomainErrorCodes.DEFAULT`.
+
+To avoid this noise, specify which types are legitimate error code sources:
+
+```csharp
+[assembly: CollectErrorCodes(
+    Types = new[] { typeof(ErrorCodes), typeof(DomainErrorCodes) }
+)]
+```
+
+Only member accesses whose declaring type is in the list will be treated as error codes. String literals
+(e.g. `throw new MyException("SSTV.10004")`) are always accepted regardless of the filter.
+The filter works for both symbol-resolved accesses (enum fields, `const` fields) and regex-extracted
+members whose type name doesn't match any entry in `Types`.
 
 #### Generated output
 
