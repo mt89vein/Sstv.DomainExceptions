@@ -122,3 +122,5 @@ Sstv.DomainExceptions.CollectErrorCodesAttribute.ClassName.get -> string?
 Sstv.DomainExceptions.CollectErrorCodesAttribute.ClassName.set -> void
 Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.get -> int
 Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.set -> void
+Sstv.DomainExceptions.CollectErrorCodesAttribute.Types.get -> System.Type![]?
+Sstv.DomainExceptions.CollectErrorCodesAttribute.Types.set -> void

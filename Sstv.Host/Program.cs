@@ -1,16 +1,23 @@
 // CA1852 Type 'Program' can be sealed because it has no subtypes in its containing assembly and is not externally visible
 // https://github.com/dotnet/roslyn-analyzers/issues/6141
+
 #pragma warning disable CA1852
 
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Sstv.Domain.Sample;
 using Sstv.DomainExceptions;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-[assembly: CollectErrorCodes]
+[assembly: CollectErrorCodes(Types =
+[
+    typeof(ErrorCodes),
+    typeof(SecondErrorCodes),
+    typeof(DomainErrorCodes)
+])]
 
 var builder = WebApplication.CreateBuilder(args);
 

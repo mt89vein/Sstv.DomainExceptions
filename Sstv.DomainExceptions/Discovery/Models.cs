@@ -44,6 +44,7 @@ internal sealed class GeneratorSettings
     public bool IsEnabled { get; set; }
     public int? MaxPropagationDepth { get; set; }
     public string? ClassName { get; set; }
+    public ImmutableHashSet<string>? AllowedTypes { get; set; }
 }
 
 internal static class ErrorCodeAnalysis

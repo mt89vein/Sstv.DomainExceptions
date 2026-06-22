@@ -3,7 +3,7 @@ namespace Sstv.DomainExceptions;
 /// <summary>
 /// Marker attribute to enable ErrorCodesCollector source generator.
 /// </summary>
-[AttributeUsage(AttributeTargets.Assembly)]
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
 public sealed class CollectErrorCodesAttribute : Attribute
 {
     /// <summary>
@@ -15,4 +15,9 @@ public sealed class CollectErrorCodesAttribute : Attribute
     /// Name of the generated partial class. Default is "ErrorCodeMethodCollector".
     /// </summary>
     public string? ClassName { get; set; }
+
+    /// <summary>
+    /// Types to scan for error codes. If null or empty, all types are scanned.
+    /// </summary>
+    public Type[]? Types { get; set; }
 }

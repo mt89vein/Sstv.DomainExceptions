@@ -46,6 +46,20 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                         case "ClassName" when na.Value.Value is string name:
                             s.ClassName = name;
                             break;
+                        case "Types" when na.Value.Kind == TypedConstantKind.Array:
+                            var types = new HashSet<string>();
+                            foreach (var typeArg in na.Value.Values)
+                            {
+                                if (typeArg.Value is ITypeSymbol typeSymbol)
+                                {
+                                    types.Add(typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                                }
+                            }
+                            if (types.Count > 0)
+                            {
+                                s.AllowedTypes = [.. types];
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -358,6 +372,15 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
             methodErrorCodes[key] = codes;
             methodCalls[key] = calls;
+        }
+
+        if (settings.AllowedTypes is { Count: > 0 })
+        {
+            foreach (var key in methodErrorCodes.Keys)
+            {
+                methodErrorCodes[key] = [.. methodErrorCodes[key]
+                    .Where(c => c.SourceTypeName is null || settings.AllowedTypes.Contains(c.SourceTypeName))];
+            }
         }
 
         var callersOf = new Dictionary<string, List<string>>();
