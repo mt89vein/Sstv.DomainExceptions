@@ -1,0 +1,37 @@
+# Hook configuration
+# Edit this file to customize hook behavior for this repository.
+# Changes are version-controlled — commit them to share with the team.
+
+# Space-separated list of allowed task (Jira) prefixes for scope validation
+# Example: TASK_PREFIXES="SSTV PROJ"
+TASK_PREFIXES="SSTV"
+
+# List of allowed Conventional Commit types (| separated, for use in grep -E)
+ALLOWED_TYPES="feat|bug|ci|wip|fix|perf|refactor|docs|build|chore|revert|style|test"
+
+# Maximum subject line length (characters)
+MAX_SUBJECT_LENGTH=90
+
+# Default commit type when none is detected in the message
+FALLBACK_COMMIT_TYPE="chore"
+
+# Filter string for `dotnet test`
+TEST_FILTER="TestCategory=UnitTests"
+
+# File extensions to check for formatting and diff (| separated, for grep -E)
+# Example: FILE_PATTERNS="\.cs$|\.vb$|\.fs$"
+FILE_PATTERNS="\.cs$"
+
+# Regex pattern for extracting ticket ID from branch name (for grep -Eoi)
+# Jira: "[A-Z]+-[0-9]+"    GitHub: "#[0-9]+"    Custom: "ABC[0-9]+"
+TICKET_PATTERN="[A-Z]+-[0-9]+"
+
+# Regex group for allowed characters in commit scope (inserted inside [...]+)
+SCOPE_CHARS="a-zA-Z0-9_./-"
+
+# Space-separated list of branch globs to skip hook processing entirely
+# SKIP_BRANCHES="main master release/*"
+
+# Allow push when tests leave uncommitted changes (e.g. golden/snapshot files)
+# Set to "true" to warn instead of blocking the push
+ALLOW_DIRTY_PUSH="false"

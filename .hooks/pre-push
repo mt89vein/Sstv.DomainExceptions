@@ -1,41 +1,83 @@
 #!/bin/sh
 
-# If the push refs start with (delete), then we're deleting a branch, so skip the pre-push hook
+# Load config (if available), fall back to defaults
+HOOK_DIR=$(dirname "$0")
+[ -f "$HOOK_DIR/config" ] && . "$HOOK_DIR/config"
+: "${TEST_FILTER:=TestCategory=UnitTests}"
+: "${FILE_PATTERNS:=\.cs$}"
+: "${SKIP_BRANCHES:=}"
+: "${ALLOW_DIRTY_PUSH:=false}"
+
+# If deleting a branch, skip all checks
 STDIN=$(cat -)
 if echo "$STDIN" | grep -q "^(delete)"; then
-  echo "(delete) found at start of push refs, skipping husky pre-push hook"
-  echo $STDIN
+  echo "(delete) found, skipping pre-push hook"
   exit 0
 fi
 
-# check if current branch has been pushed to upstream 
+# Determine changed .cs files in the current branch (not yet pushed)
 if git rev-parse @{upstream} >/dev/null 2>&1; then
-    # get all the changed .cs files in the current branch including commited locally and not pushed yet (diff between head and upstream)
-    CHANGED_FILES=$(git diff --name-only @{upstream}..HEAD | grep '\.cs$' | sort -u)
+    CHANGED_FILES=$(git diff --name-only @{upstream}..HEAD | grep -E "$FILE_PATTERNS" | sort -u)
 else
-    # if there is no upstream - take all .cs files from this branch 
-    CHANGED_FILES=$(git diff --name-only HEAD^^ | grep '\.cs$' | sort -u)
+    # No upstream — diff against empty tree (handles initial/single-commit branches)
+    CHANGED_FILES=$(git diff --name-only 4b825dc642cb6eb9a060e54bf899d153036ddaa7..HEAD | grep -E "$FILE_PATTERNS" | sort -u)
 fi
 
-# changed files are formatted
-if [ -z "$CHANGED_FILES" ]; then
-    echo "No .cs files changed, skip formatting and unit tests"
-else
-    echo "Formatting changed .cs files..."
-    dotnet format --include $CHANGED_FILES
-
-    # Check if git repo dirtied after autoformatter
-    if [ ! -z "$(git status -s)" ]; then
-        echo "Creating commit for formatting changes..."
-        echo "$CHANGED_FILES" | xargs git add
-        git commit -m "chore: auto formatting"
+# Skip processing on configured branches
+if [ -n "$SKIP_BRANCHES" ]; then
+    BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
+    if [ -n "$BRANCH_NAME" ]; then
+        for pattern in $SKIP_BRANCHES; do
+            case "$BRANCH_NAME" in
+                $pattern) echo "Skipped (branch '$BRANCH_NAME' matches '$pattern')"; exit 0 ;;
+            esac
+        done
     fi
+fi
 
-    dotnet test --filter "TestCategory=UnitTests"
+if [ -z "$CHANGED_FILES" ]; then
+    echo "No matching files changed, skip formatting check and unit tests"
+    exit 0
+fi
 
-    # Check if git repo dirtied after tests (e.g. golden/snapshot tests)
-    if [ ! -z "$(git status -s)" ]; then
-        echo "There are changes after tests. Review it please carefully"
+echo "Checking formatting of changed files..."
+CHANGED_FILES_CSV=$(echo "$CHANGED_FILES" | tr '\n' ';')
+CHANGED_FILES_CSV=${CHANGED_FILES_CSV%;}
+
+if ! dotnet format --verify-no-changes --include "$CHANGED_FILES_CSV"; then
+    echo ""
+    echo "ERROR: Some files are not formatted correctly."
+    echo "  Run 'dotnet format' locally to auto-fix, then review and commit."
+    exit 1
+fi
+echo "  Formatting check passed."
+
+echo ""
+echo "Running unit tests..."
+dotnet test --filter "$TEST_FILTER"
+test_exit=$?
+if [ $test_exit -ne 0 ]; then
+    echo ""
+    echo "ERROR: Unit tests failed (exit code: $test_exit). Fix before pushing."
+    exit 1
+fi
+echo "  All unit tests passed."
+
+# Check for uncommitted changes after tests (e.g. golden/snapshot files)
+dirty=$(git status -s)
+if [ -n "$dirty" ]; then
+    echo ""
+    if [ "$ALLOW_DIRTY_PUSH" = "true" ]; then
+        echo "WARNING: Tests generated uncommitted changes (ALLOW_DIRTY_PUSH=true):"
+        echo "$dirty"
+        echo ""
+        echo "  Pushing anyway. Review these changes after push."
+    else
+        echo "ERROR: Tests generated uncommitted changes:"
+        echo "$dirty"
+        echo ""
+        echo "  Review and commit these changes, or add them to .gitignore."
+        echo "  Set ALLOW_DIRTY_PUSH=true in .hooks/config to allow pushing anyway."
         exit 1
     fi
 fi

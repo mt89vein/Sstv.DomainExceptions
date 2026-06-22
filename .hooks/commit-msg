@@ -2,67 +2,142 @@
 
 # Commit message linter based on Conventional Commits
 # https://www.conventionalcommits.org/en/v1.0.0/
-# https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#type
 
 more_info="More info: https://www.conventionalcommits.org/en/v1.0.0/"
 
-# Define allowed commit types
-allowed_types="feat|bug|ci|wip|fix|perf|refactor|docs|build|chore|revert|style|test"
+# Load config (if available), fall back to defaults
+HOOK_DIR=$(dirname "$0")
+[ -f "$HOOK_DIR/config" ] && . "$HOOK_DIR/config"
+: "${TASK_PREFIXES:=SSTV}"
+: "${ALLOWED_TYPES:=feat|bug|ci|wip|fix|perf|refactor|docs|build|chore|revert|style|test}"
+: "${MAX_SUBJECT_LENGTH:=90}"
+: "${SCOPE_CHARS:=a-zA-Z0-9_./-}"
+: "${SKIP_BRANCHES:=}"
 
-# Define task prefixes
-task_prefixes="SSTV"
+# Skip processing on configured branches
+if [ -n "$SKIP_BRANCHES" ]; then
+    BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
+    if [ -n "$BRANCH_NAME" ]; then
+        for pattern in $SKIP_BRANCHES; do
+            case "$BRANCH_NAME" in
+                $pattern) echo "Skipped (branch '$BRANCH_NAME' matches '$pattern')"; exit 0 ;;
+            esac
+        done
+    fi
+fi
 
-# Read the commit message from the provided file
-msg=$(head -n1 $1)
+msg=$(head -n1 "$1")
+len=${#msg}
 
-echo $msg
+echo "---"
+echo "$msg"
+echo "---"
 
-# Check if commit message length exceeds 90 characters
-if [ ${#msg} -gt 90 ]; then
-    echo "Error: Commit message exceeds 90 characters (current length: ${#msg})"
-    echo "Please shorten the commit message to 90 characters or less."
-    echo $more_info
+# ------ Length ------
+if [ $len -gt $MAX_SUBJECT_LENGTH ]; then
+    echo "ERROR: Commit message is $len characters (max $MAX_SUBJECT_LENGTH)"
+    echo "  $msg"
+    echo "$more_info"
     exit 1
 fi
 
-# Regex pattern for Conventional Commits:
-# - Starts with allowed type
-# - Optional scope in parentheses
-# - Optional breaking change indicator (!)
-# - Colon and space, then subject (min 1 chars)
-# - Max length 90 chars
-# - No trailing dot or whitespace
-pattern="^(($allowed_types)(\([a-zA-Z0-9_-]+\)|)!?: .{1,})$"
-
-# Check if commit message matches the pattern
-if ! echo "$msg" | grep -E "$pattern"; then
-    echo "Invalid commit message: $msg Commit type must be one of [$allowed_types]"
-    echo "e.g: 'feat(${task_prefixes}-1234): subject' or 'feat: subject'"
-    echo $more_info
+# ------ Extract and validate type ------
+commit_type=$(echo "$msg" | sed 's/^\([a-z]*\).*/\1/')
+if ! echo "$commit_type" | grep -Eq "^($ALLOWED_TYPES)$"; then
+    echo "ERROR: Invalid type '$commit_type'"
+    echo "  Allowed types: $ALLOWED_TYPES"
+    echo "  Format: type[(scope)][!]: subject"
+    echo "  Example: feat: add user login"
+    echo "$more_info"
     exit 1
 fi
 
-# Extract scope from the commit message
-scope=$(echo "$msg" | sed -E 's/^[a-z]+(\(([a-zA-Z0-9_-]+)\))?.*/\2/')
+# ------ Parse rest after type ------
+rest="${msg#$commit_type}"
 
-# If no scope is provided, the commit is valid
-if [ -z "$scope" ]; then
-    exit 0
-fi
-
-# Check if scope starts with a valid task prefix
-if [ -n "$task_prefixes" ]; then
-    for prefix in $task_prefixes; do
-        if echo "$scope" | grep -q "^${prefix}-"; then
-            exit 0
+case "$rest" in
+    \(*)
+        # type(something)...
+        scope=$(echo "$rest" | sed -n -E "s/^\(([$SCOPE_CHARS]+)\).*/\1/p")
+        if [ -z "$scope" ]; then
+            echo "ERROR: Invalid characters in scope"
+            echo "  Allowed: letters, digits, _, ., /, -"
+            echo "  Found: $(echo "$rest" | sed 's/^\(([^)]*)\).*/\1/')"
+            echo "  Example: feat(${TASK_PREFIXES%% *}-1234): subject"
+            exit 1
         fi
-    done
+
+        # Validate scope against task prefix
+        prefix_ok=false
+        for p in $TASK_PREFIXES; do
+            if echo "$scope" | grep -q "^${p}-"; then
+                prefix_ok=true; break
+            fi
+        done
+        if [ "$prefix_ok" = false ]; then
+            echo "ERROR: Scope '$scope' must start with a task prefix [$TASK_PREFIXES]"
+            echo "  Example: feat(${TASK_PREFIXES%% *}-1234): subject"
+            exit 1
+        fi
+
+        # Check for breaking indicator and colon
+        after_scope="${rest#\($scope\)}"
+        case "$after_scope" in
+            "!:"*)
+                # type(scope)!: subject  — valid
+                subject="${after_scope#!:}"
+                ;;
+            ":"*)
+                # type(scope): subject  — valid
+                subject="${after_scope#:}"
+                ;;
+            *)
+                echo "ERROR: Expected ':' or '!:' after scope '$scope'"
+                echo "  Found: '${after_scope:0:20}'"
+                echo "  Example: feat(${TASK_PREFIXES%% *}-1234): subject or feat(${TASK_PREFIXES%% *}-1234)!: subject"
+                exit 1
+                ;;
+        esac
+        ;;
+    !:*)
+        # type!: subject  — breaking without scope, valid
+        subject="${rest#!:}"
+        ;;
+    :*)
+        # type: subject  — standard, valid
+        subject="${rest#:}"
+        ;;
+    *)
+        echo "ERROR: Missing ': ' after commit type"
+        echo "  Found after type '$commit_type': '${rest:0:30}'"
+        echo "  Expected: '[(scope)][!]: subject'"
+        echo "  Example: feat: add user login"
+        echo "$more_info"
+        exit 1
+        ;;
+esac
+
+# ------ Validate subject ------
+# Trim leading space (from ": " or "!: " separator)
+subject="${subject# }"
+if [ -z "$subject" ]; then
+    echo "ERROR: Subject is empty"
+    echo "  Format: type[(scope)][!]: <subject>"
+    echo "  Example: feat: add user login"
+    exit 1
 fi
 
-# If scope doesn't match task prefix, fail
-echo "Invalid commit message: $msg"
-echo "Commit type must be one of [$allowed_types]"
-echo "e.g: 'feat(${task_prefixes}-1234): subject' or 'feat: subject'"
-echo $more_info
+if echo "$subject" | grep -q '\.$'; then
+    echo "ERROR: Subject ends with a period (.)"
+    echo "  Subject: '$subject'"
+    echo "  Remove the trailing dot."
+    exit 1
+fi
 
-exit 1
+if echo "$subject" | grep -q '[[:space:]]$'; then
+    echo "ERROR: Subject ends with whitespace"
+    echo "  Subject: '$subject'"
+    exit 1
+fi
+
+exit 0
