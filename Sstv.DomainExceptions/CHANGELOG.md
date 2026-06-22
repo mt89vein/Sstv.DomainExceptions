@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-06-21
+
+### Added
+- `ErrorCodeRegistry` - to aggregate error codes and call graphs from multiple assemblies and provides traversal to collect all error codes for any entry-point method
+- `MethodCallGraph` always emitted (even if empty) so consumer code can safely reference the field. Does not include calls to `System.*` and `Microsoft.*` namespaces (BCL has no error codes)
+- `ExcludeFromErrorCodeAnalysisAttribute` to exclude class/method from error code analysis (respected by both method analysis and call graph)
+
+
 ## [4.2.0] - 2026-06-21
 
 ### Added

@@ -13,6 +13,7 @@ namespace Sstv.Host;
 /// Extensions methods for <see cref="IServiceCollection"/>.
 /// </summary>
 [ExcludeFromCodeCoverage]
+[ExcludeFromErrorCodeAnalysis(Justification = "No error codes thrown here")]
 public static class ServiceCollectionExtensions
 {
     /// <summary>

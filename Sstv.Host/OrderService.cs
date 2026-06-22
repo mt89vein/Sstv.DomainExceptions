@@ -10,6 +10,13 @@ public interface IOrderService
 
 public sealed class OrderService : IOrderService
 {
+    private readonly SampleService _sampleService;
+
+    public OrderService(SampleService sampleService)
+    {
+        _sampleService = sampleService;
+    }
+
     public void ProcessOrder(string orderId)
     {
         if (string.IsNullOrEmpty(orderId))
@@ -17,6 +24,7 @@ public sealed class OrderService : IOrderService
             throw new MyException("INTERFACE_ONE");
         }
 
+        _sampleService.ThrowInAnotherAssembly();
         ValidateOrder(orderId);
         CheckInventory(orderId);
         ProcessPayment(orderId);

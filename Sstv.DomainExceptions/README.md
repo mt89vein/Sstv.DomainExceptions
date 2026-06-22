@@ -218,11 +218,11 @@ Without this attribute, the generator produces no output.
 
 The `[CollectErrorCodes]` attribute supports optional named arguments:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `MaxPropagationDepth` | `int` | `10` | Maximum call chain depth for error code propagation through method calls. |
-| `ClassName` | `string?` | `"ErrorCodeMethodCollector"` | Name of the generated partial class. Useful for avoiding conflicts. |
-| `Types` | `Type[]?` | `null` | Types that are allowed to declare error codes. All member accesses not backed by a symbol from one of these types are discarded as false positives. |
+| Parameter             | Type      | Default                      | Description                                                                                                                                         |
+|-----------------------|-----------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `MaxPropagationDepth` | `int`     | `10`                         | Maximum call chain depth for error code propagation through method calls.                                                                           |
+| `ClassName`           | `string?` | `"ErrorCodeMethodCollector"` | Name of the generated partial class. Useful for avoiding conflicts.                                                                                 |
+| `Types`               | `Type[]?` | `null`                       | Types that are allowed to declare error codes. All member accesses not backed by a symbol from one of these types are discarded as false positives. |
 
 Example with custom settings:
 
@@ -251,6 +251,31 @@ Only member accesses whose declaring type is in the list will be treated as erro
 The filter works for both symbol-resolved accesses (enum fields, `const` fields) and regex-extracted
 members whose type name doesn't match any entry in `Types`.
 
+#### Excluding methods and classes with `[ExcludeFromErrorCodeAnalysis]`
+
+Apply the attribute to a class, struct, or method to skip it entirely:
+
+```csharp
+[ExcludeFromErrorCodeAnalysis]
+public class InternalHelper
+{
+    public static string Cleanup(string input) { ... }
+}
+
+public class OrderService
+{
+    [ExcludeFromErrorCodeAnalysis]
+    public void SkipThisMethod() { ... }
+}
+```
+
+The excluded method:
+- Won't appear in `ErrorCodesByMethod`
+- Won't appear as a caller in `MethodCallGraph`
+- Calls to excluded methods from other methods won't be recorded in `MethodCallGraph`
+
+BCL calls (`System.*` and `Microsoft.*` namespaces) are automatically excluded from the call graph.
+
 #### Generated output
 
 ```csharp
@@ -272,29 +297,39 @@ namespace Sstv.Host
                     new ErrorCodeSource("SSTV.10004", ErrorCodeSourceType.Constant, typeof(DomainErrorCodes)),
                 ],
             }.ToFrozenDictionary();
+
+        public static readonly FrozenDictionary<string, string[]> MethodCallGraph =
+            new Dictionary<string, string[]>
+            {
+                ["Sstv.Host.OrderService.ProcessOrder"] = [
+                    "Sstv.Host.OrderService.CheckInventory",
+                    "Sstv.Domain.Sample.SampleService.ExternalThrow",
+                ],
+            }.ToFrozenDictionary();
     }
 }
 ```
 
-The namespace is derived from the assembly name. The dictionary is keyed by `FullTypeName.MethodName` for
-controllers/services, or by the `WithName()` value (falling back to route pattern) for minimal API endpoints.
-Each entry lists all error codes that can originate from that method, including those from methods it calls.
+The namespace is derived from the assembly name. `ErrorCodesByMethod` is keyed by `FullTypeName.MethodName`
+for controllers/services, or by the `WithName()` value (falling back to route pattern) for minimal API endpoints.
+`MethodCallGraph` maps each caller (that has error codes) to its callees. Only user/project calls are included;
+BCL methods (`System.*`, `Microsoft.*`) and `[ExcludeFromErrorCodeAnalysis]` methods are automatically filtered out.
 
 #### Supported detection patterns
 
 The generator detects error codes from these sources:
 
-| Pattern | Example | Source type |
-|---------|---------|-------------|
-| `DomainException` constructor with string literal | `throw new MyException("SSTV.10004")` | `Constant` |
-| `DomainException` constructor with `const` field | `throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)` | `Constant` |
-| `DomainException` constructor with enum member | `throw new MyException(ErrorCodes.InvalidData)` | `Enum` |
-| `.ToException()` on enum value | `throw ErrorCodes.SomethingBadHappen.ToException()` | `Enum` |
-| Fluent chain with `WithXxx()` | `throw ErrorCodes.Default.ToException().WithDetailedMessage("msg")` | `Enum` |
-| Variable-declared exception then thrown | `var x = new MyException("CODE"); throw x;` | `Constant` |
-| Return with error code object (Result pattern) | `return Result.Fail(new ErrorCodeResult(ErrorCodes.InvalidData))` | `Enum` |
-| Named constructor argument (literal) | `throw new MyException(errorCode: "SSTV.10004")` | `Constant` |
-| Named constructor argument (const/enum) | `throw new MyException(errorCode: ErrorCodes.InvalidData)` | `Enum` / `Constant` |
+| Pattern                                           | Example                                                             | Source type         |
+|---------------------------------------------------|---------------------------------------------------------------------|---------------------|
+| `DomainException` constructor with string literal | `throw new MyException("SSTV.10004")`                               | `Constant`          |
+| `DomainException` constructor with `const` field  | `throw new MyException(DomainErrorCodes.NOT_ENOUGH_MONEY)`          | `Constant`          |
+| `DomainException` constructor with enum member    | `throw new MyException(ErrorCodes.InvalidData)`                     | `Enum`              |
+| `.ToException()` on enum value                    | `throw ErrorCodes.SomethingBadHappen.ToException()`                 | `Enum`              |
+| Fluent chain with `WithXxx()`                     | `throw ErrorCodes.Default.ToException().WithDetailedMessage("msg")` | `Enum`              |
+| Variable-declared exception then thrown           | `var x = new MyException("CODE"); throw x;`                         | `Constant`          |
+| Return with error code object (Result pattern)    | `return Result.Fail(new ErrorCodeResult(ErrorCodes.InvalidData))`   | `Enum`              |
+| Named constructor argument (literal)              | `throw new MyException(errorCode: "SSTV.10004")`                    | `Constant`          |
+| Named constructor argument (const/enum)           | `throw new MyException(errorCode: ErrorCodes.InvalidData)`          | `Enum` / `Constant` |
 
 Error codes from string literals and `const` fields are stored as-is. Enum-based codes are stored as the member
 name (e.g. `"InvalidData"`, `"SomethingBadHappen"`), and the generated dictionary references the extension class
@@ -319,27 +354,60 @@ The generator traces error codes across method boundaries:
 
 #### Supported endpoint types
 
-| Endpoint type | Detection | Naming |
-|---------------|-----------|--------|
-| Controller action methods | `MethodDeclarationSyntax` | `FullTypeName.MethodName` |
+| Endpoint type                              | Detection                    | Naming                                  |
+|--------------------------------------------|------------------------------|-----------------------------------------|
+| Controller action methods                  | `MethodDeclarationSyntax`    | `FullTypeName.MethodName`               |
 | Minimal API `MapGet/Post/Put/Delete/Patch` | `InvocationExpressionSyntax` | `.WithName(...)` value or route pattern |
-| Minimal API `MapGroup` / `MapMethods` | Same as above | Same as above |
+| Minimal API `MapGroup` / `MapMethods`      | Same as above                | Same as above                           |
+
+#### Runtime error code registry (`ErrorCodeRegistry`)
+
+Each assembly's source generator produces `ErrorCodesByMethod` and `MethodCallGraph` independently.
+For cross-assembly scenarios, use `ErrorCodeRegistry` to merge and traverse them:
+
+```csharp
+using Sstv.DomainExceptions.Discovery;
+
+// Called once at startup — merge dictionaries from all referenced assemblies
+ErrorCodeRegistry.Init(
+    [
+        MyApp.Domain.ErrorCodeMethodCollector.ErrorCodesByMethod,
+        MyApp.Infrastructure.ErrorCodeMethodCollector.ErrorCodesByMethod
+    ],
+    [
+        MyApp.Domain.ErrorCodeMethodCollector.MethodCallGraph,
+        MyApp.Infrastructure.ErrorCodeMethodCollector.MethodCallGraph
+    ]
+);
+
+// Later — get all error codes reachable from a method (recursive graph traversal)
+var codes = ErrorCodeRegistry.GetAllErrorCodes("MyApp.OrderService.ProcessOrder");
+
+// codes includes error codes from ProcessOrder itself AND from any method it calls,
+// including cross-assembly calls (e.g. MyApp.Infrastructure.SampleService.DoSomething)
+```
+
+The registry:
+- Merges `ErrorCodesByMethod` and `MethodCallGraph` into frozen dictionaries
+- Deduplicates error codes and callee entries during merge
+- `GetAllErrorCodes` recursively walks the merged call graph with visited-set protection
+- BCL calls (`System.*`, `Microsoft.*`) are automatically excluded from the graph
 
 #### What is NOT supported (limitations)
 
-| Limitation | Details |
-|------------|---------|
-| **Runtime-computed codes** | Error codes from variables, string interpolation (`$"PREFIX_{id}"`), or method calls (`GetErrorCode()`) — only compile-time constants, literals, and enum members work |
-| **Catch-and-re-throw** | `catch (Exception ex) { throw ex; }` — the variable initializer is not in the same method |
-| **Object initializers** | `new MyException { ErrorCode = "X" }` |
-| **`with` expressions** on records | Not handled |
-| **Bare `throw;`** | Silent no-op |
-| **Ternary/conditional inside throw** | Only the outermost expression is analyzed |
-| **Call chain depth > 10** | Propagation loop hardcoded to 10 iterations |
-| **Delegates / lambdas / `Func<>`/`Action<>`** | Inlined lambdas in Map methods are analyzed, but passing a method as a delegate is not traced |
-| **Virtual dispatch / polymorphism** | Tracked by declaring type, not runtime type |
-| **Interface implementations in external assemblies** | Cache only scans source types (same assembly) |
-| **Reflection / `dynamic` calls** | Not resolvable via Roslyn semantic model |
-| **Extension method calls on interfaces** | Resolved to the static extension class, not the interface |
-| **Structs / records / abstract classes** | Excluded from interface implementation cache |
-| **`Results.BadRequest()`, `Results.Ok()` etc.** | Not analyzed — explicit `IResult` returns must be handled manually |
+| Limitation                                           | Details                                                                                                                                                                |
+|------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Runtime-computed codes**                           | Error codes from variables, string interpolation (`$"PREFIX_{id}"`), or method calls (`GetErrorCode()`) — only compile-time constants, literals, and enum members work |
+| **Catch-and-re-throw**                               | `catch (Exception ex) { throw ex; }` — the variable initializer is not in the same method                                                                              |
+| **Object initializers**                              | `new MyException { ErrorCode = "X" }`                                                                                                                                  |
+| **`with` expressions** on records                    | Not handled                                                                                                                                                            |
+| **Bare `throw;`**                                    | Silent no-op                                                                                                                                                           |
+| **Ternary/conditional inside throw**                 | Only the outermost expression is analyzed                                                                                                                              |
+| **Call chain depth > 10**                            | Propagation loop hardcoded to 10 iterations                                                                                                                            |
+| **Delegates / lambdas / `Func<>`/`Action<>`**        | Inlined lambdas in Map methods are analyzed, but passing a method as a delegate is not traced                                                                          |
+| **Virtual dispatch / polymorphism**                  | Tracked by declaring type, not runtime type                                                                                                                            |
+| **Interface implementations in external assemblies** | Cache only scans source types (same assembly)                                                                                                                          |
+| **Reflection / `dynamic` calls**                     | Not resolvable via Roslyn semantic model                                                                                                                               |
+| **Extension method calls on interfaces**             | Resolved to the static extension class, not the interface                                                                                                              |
+| **Structs / records / abstract classes**             | Excluded from interface implementation cache                                                                                                                           |
+| **`Results.BadRequest()`, `Results.Ok()` etc.**      | Not analyzed — explicit `IResult` returns must be handled manually                                                                                                     |

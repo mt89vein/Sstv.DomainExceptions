@@ -124,3 +124,13 @@ Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.get -> int
 Sstv.DomainExceptions.CollectErrorCodesAttribute.MaxPropagationDepth.set -> void
 Sstv.DomainExceptions.CollectErrorCodesAttribute.Types.get -> System.Type![]?
 Sstv.DomainExceptions.CollectErrorCodesAttribute.Types.set -> void
+Sstv.DomainExceptions.Discovery.ErrorCodeRegistry
+Sstv.DomainExceptions.Discovery.ErrorCodeRegistry.AllErrorCodes.get -> System.Collections.Frozen.FrozenDictionary<string!, Sstv.DomainExceptions.ErrorCodeSource![]!>!
+Sstv.DomainExceptions.Discovery.ErrorCodeRegistry.CallGraph.get -> System.Collections.Frozen.FrozenDictionary<string!, string![]!>!
+static Sstv.DomainExceptions.Discovery.ErrorCodeRegistry.GetAllErrorCodes(string! methodKey) -> Sstv.DomainExceptions.ErrorCodeSource![]!
+static Sstv.DomainExceptions.Discovery.ErrorCodeRegistry.Init(System.Collections.Generic.IReadOnlyDictionary<string!, Sstv.DomainExceptions.ErrorCodeSource![]!>![]! errorCodeMaps, System.Collections.Generic.IReadOnlyDictionary<string!, string![]!>![]! callGraphMaps) -> void
+static Sstv.DomainExceptions.Discovery.ErrorCodeRegistry.Instance.get -> Sstv.DomainExceptions.Discovery.ErrorCodeRegistry!
+Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute
+Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute.ExcludeFromErrorCodeAnalysisAttribute() -> void
+Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute.Justification.get -> string?
+Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute.Justification.set -> void

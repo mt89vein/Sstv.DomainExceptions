@@ -6,18 +6,22 @@
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Sstv.Domain.Sample;
-using Sstv.DomainExceptions;
+using Sstv.DomainExceptions.Discovery;
 using Sstv.DomainExceptions.Extensions.DependencyInjection;
 using Sstv.Host;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-[assembly: CollectErrorCodes(Types =
-[
-    typeof(ErrorCodes),
-    typeof(SecondErrorCodes),
-    typeof(DomainErrorCodes)
-])]
+ErrorCodeRegistry.Init(
+    [
+        Sstv.Host.ErrorCodeMethodCollector.ErrorCodesByMethod,
+        Sstv.Domain.Sample.ErrorCodeMethodCollector.ErrorCodesByMethod
+    ],
+    [
+        Sstv.Host.ErrorCodeMethodCollector.MethodCallGraph,
+        Sstv.Domain.Sample.ErrorCodeMethodCollector.MethodCallGraph
+    ]
+);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,7 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddDomainException();
 builder.Services.AddProblemDetail();
+builder.Services.AddSingleton<SampleService>();
 builder.Services.AddSingleton<OrderService>();
 builder.Services.AddSingleton<IOrderService>(sp => sp.GetRequiredService<OrderService>());
 
@@ -68,13 +73,14 @@ app.MapPrometheusScrapingEndpoint();
 app.UseErrorCodesDebugView();
 
 app.MapGet("/discovery",
-    () => Results.Ok(ErrorCodeMethodCollector.ErrorCodesByMethod.ToDictionary(x => x.Key,
+    () => Results.Ok(ErrorCodeRegistry.Instance.AllErrorCodes.ToDictionary(
+        x => x.Key,
         x => x.Value.Select(source =>
             new
             {
                 source.Code,
                 ErrorType = source.ErrorType?.ToString(),
-                SourceType = source.SourceType.ToString()
+                SourceType = Enum.GetName(source.SourceType)
             }))));
 
 app.Run();

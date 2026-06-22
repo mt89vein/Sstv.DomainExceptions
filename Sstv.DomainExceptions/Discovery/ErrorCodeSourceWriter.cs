@@ -10,6 +10,7 @@ internal partial class ErrorCodeMethodCollector
 
     private static void GenerateSource(SourceProductionContext context,
         Dictionary<string, List<ErrorCodeInfo>> methodErrorCodes,
+        Dictionary<string, List<string>> methodCalls,
         string namespaceName,
         string? className
     )
@@ -94,6 +95,7 @@ internal partial class ErrorCodeMethodCollector
         sb.AppendLine();
         sb.AppendLine($"namespace {namespaceName}");
         sb.AppendLine("{");
+
         sb.AppendLine($"    public static partial class {className ?? "ErrorCodeMethodCollector"}");
         sb.AppendLine("    {");
         sb.AppendLine(
@@ -142,9 +144,38 @@ internal partial class ErrorCodeMethodCollector
         }
 
         sb.AppendLine("            }.ToFrozenDictionary();");
+
+        var callersToEmit = methodCalls
+            .Where(k => k.Value.Count > 0 && methodErrorCodes.ContainsKey(k.Key))
+            .Select(k => k.Key)
+            .OrderBy(k => k)
+            .ToList();
+
+        sb.AppendLine();
+        sb.AppendLine(
+            "        public static readonly FrozenDictionary<string, string[]> MethodCallGraph =");
+        sb.AppendLine("            new Dictionary<string, string[]>");
+        sb.AppendLine("            {");
+
+        foreach (var caller in callersToEmit)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
+            var callees = string.Join("\", \"",
+                methodCalls[caller].OrderBy(c => c).Select(EscapeString));
+            sb.AppendLine($"                [\"{EscapeString(caller)}\"] = [\"{callees}\"],");
+        }
+
+        sb.AppendLine("            }.ToFrozenDictionary();");
+
         sb.AppendLine("    }");
         sb.AppendLine("}");
 
         context.AddSource("ErrorCodeMethodCollector.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
+    private static string EscapeString(string s)
+    {
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 }

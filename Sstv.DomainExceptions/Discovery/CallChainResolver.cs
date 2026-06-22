@@ -119,6 +119,19 @@ internal partial class ErrorCodeMethodCollector
     {
         if (semanticModel.GetSymbolInfo(invocation).Symbol is IMethodSymbol methodSymbol)
         {
+            if (HasExcludeFromAnalysisAttribute(methodSymbol))
+            {
+                return;
+            }
+
+            var ns = methodSymbol.ContainingType?.ContainingNamespace?.ToDisplayString();
+            if (ns is not null &&
+                (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal) ||
+                 ns == "Microsoft" || ns.StartsWith("Microsoft.", StringComparison.Ordinal)))
+            {
+                return;
+            }
+
             var receiverType = methodSymbol.ContainingType?.ToDisplayString();
             if (string.IsNullOrEmpty(receiverType))
             {

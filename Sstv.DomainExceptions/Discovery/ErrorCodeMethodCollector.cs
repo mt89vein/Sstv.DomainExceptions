@@ -34,7 +34,7 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
                     return new GeneratorSettings { IsEnabled = false };
                 }
 
-                var s = new GeneratorSettings { IsEnabled = true };
+                var s = new GeneratorSettings { IsEnabled = true, AssemblyName = compilation.AssemblyName };
 
                 foreach (var na in attr.NamedArguments)
                 {
@@ -148,6 +148,32 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             });
     }
 
+    private static bool HasExcludeFromAnalysisAttribute(ISymbol symbol)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (attr.AttributeClass?.ToDisplayString() ==
+                "Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute")
+            {
+                return true;
+            }
+        }
+
+        if (symbol.ContainingType is { } type)
+        {
+            foreach (var attr in type.GetAttributes())
+            {
+                if (attr.AttributeClass?.ToDisplayString() ==
+                    "Sstv.DomainExceptions.ExcludeFromErrorCodeAnalysisAttribute")
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static MethodInfo? GetMethodInfoFromSyntax(GeneratorSyntaxContext ctx)
     {
         if (ctx.Node is not MethodDeclarationSyntax methodDecl)
@@ -157,6 +183,11 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
 
         var symbol = ctx.SemanticModel.GetDeclaredSymbol(methodDecl);
         if (symbol is null)
+        {
+            return null;
+        }
+
+        if (HasExcludeFromAnalysisAttribute(symbol))
         {
             return null;
         }
@@ -459,8 +490,10 @@ internal partial class ErrorCodeMethodCollector : IIncrementalGenerator
             return;
         }
 
-        var namespaceName = compilation?.AssemblyName ?? "Sstv.DomainExceptions";
+        var namespaceName = compilation?.AssemblyName
+                           ?? settings.AssemblyName
+                           ?? "Sstv.DomainExceptions";
 
-        GenerateSource(context, methodErrorCodes, namespaceName, settings.ClassName);
+        GenerateSource(context, methodErrorCodes, methodCalls, namespaceName, settings.ClassName);
     }
 }

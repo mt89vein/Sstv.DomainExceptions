@@ -9,6 +9,7 @@ namespace Sstv.Host;
 /// Enriches error code with it's HTTP status code.
 /// </summary>
 [ExcludeFromCodeCoverage(Justification = "Not used in request processing")]
+[ExcludeFromErrorCodeAnalysis(Justification = "No error codes thrown here")]
 [UsedImplicitly]
 internal sealed class StatusCodeEnricher : IDomainExceptionDebugEnricher
 {

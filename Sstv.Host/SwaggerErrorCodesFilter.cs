@@ -2,6 +2,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.OpenApi;
 using Sstv.DomainExceptions;
+using Sstv.DomainExceptions.Discovery;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -9,6 +10,7 @@ using System.Globalization;
 namespace Sstv.Host;
 
 [UsedImplicitly]
+[ExcludeFromErrorCodeAnalysis(Justification = "No error codes thrown here")]
 internal sealed class SwaggerErrorCodesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
@@ -70,17 +72,21 @@ internal sealed class SwaggerErrorCodesFilter : IOperationFilter
         if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerAction)
         {
             var key = controllerAction.ControllerTypeInfo.FullName + "." + controllerAction.ActionName;
-            if (ErrorCodeMethodCollector.ErrorCodesByMethod.TryGetValue(key, out errorCodes))
+            errorCodes = ErrorCodeRegistry.GetAllErrorCodes(key);
+            if (errorCodes.Length > 0)
             {
                 return true;
             }
         }
 
         // Minimal API endpoint: key = .WithName() value (operationId)
-        if (!string.IsNullOrEmpty(operation.OperationId) &&
-            ErrorCodeMethodCollector.ErrorCodesByMethod.TryGetValue(operation.OperationId, out errorCodes))
+        if (!string.IsNullOrEmpty(operation.OperationId))
         {
-            return true;
+            errorCodes = ErrorCodeRegistry.GetAllErrorCodes(operation.OperationId);
+            if (errorCodes.Length > 0)
+            {
+                return true;
+            }
         }
 
         errorCodes = null;
